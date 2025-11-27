@@ -7,7 +7,8 @@ class Animations {
   public:
     Animations();
     void helloWordMochi();
-    void prompt_command(String consoleText);
+    void animationsLoop();
+    void animeScreen(String consoleText);
   private:
     String animations;
 };

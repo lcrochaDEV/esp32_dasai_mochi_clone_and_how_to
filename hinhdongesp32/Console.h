@@ -8,7 +8,7 @@ class Console {
     Console(String consoleText = "");
     //MENSAGEM DE TODO O PROGRAMA
     void helloWord(String consoleText = "Hello Mochi");
-    void menssageViewMsg(String consoleText);
+    void menssageViewMsg(String consoleText = "Hello Mochi");
     void consoleView();
   private:
     String consoleTextView;
