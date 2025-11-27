@@ -3,15 +3,15 @@
 #ifndef ALL_FRAMES_H
 #define ALL_FRAMES_H
 
-#include "frames/frame_00.h"
+#include "frames/wifi_00.h"
 
 
-// Mảng con trỏ đến tất cả các frame
-const unsigned char* frames[24] = {
-  frame_00
+// Mảng con trỏ đến tất cả các frame => PTBR = Array de ponteiros para todos os frames
+const unsigned char* frames[1] = {
+  wifi_00
 };
 
-#define TOTAL_FRAMES 24
+#define TOTAL_FRAMES 1
 #define FRAME_WIDTH 128
 #define FRAME_HEIGHT 64
 
