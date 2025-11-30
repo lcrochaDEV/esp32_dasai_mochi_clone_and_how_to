@@ -12,7 +12,6 @@ notas.txt
 ./c++_gif/chrome_desconected
 ./c++_gif/desconecta.gif
 ./c++_gif/frames.json
-./hinhdongesp32/frames
 ./hinhdongesp32/animations_dir
 c++_gif/env
 c++_gif/bloggif_frames_gif
@@ -21,5 +20,4 @@ c++_gif/frame
 c++_gif/chrome_desconected
 c++_gif/desconecta.gif
 c++_gif/frames.json
-hinhdongesp32/frames
 hinhdongesp32/animations_dir

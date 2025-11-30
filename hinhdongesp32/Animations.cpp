@@ -51,6 +51,23 @@ void Animations::animationsLoop(){
   }
 }
 
+void Animations::setFrameData(const unsigned char* frameData[]){
+  static unsigned long lastFrameTime = 0;
+  static int currentFrame = 0;
+  unsigned long currentTime = millis();
+  if (currentTime - lastFrameTime >= FRAME_DELAY) {
+    lastFrameTime = currentTime;
+    display.clearDisplay();
+    display.drawBitmap(0, 0, frameData[currentFrame], FRAME_WIDTH, FRAME_HEIGHT, SSD1306_WHITE);
+    display.display();
+    currentFrame = (currentFrame + 1) % TOTAL_FRAMES;
+  }
+}
+
+void Animations::not_wifi(){
+  static int currentFrame = 0;
+  setFrameData(not_connet);
+}
 void Animations::animeScreen(String consoleText = "Hello Mochi"){
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println(F("Falha no display"));

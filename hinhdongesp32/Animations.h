@@ -9,8 +9,11 @@ class Animations {
     void helloWordMochi();
     void animationsLoop();
     void animeScreen(String consoleText);
+    void not_wifi();
+
   private:
     String animations;
+    void setFrameData(const unsigned char* frameData[]);
 };
 
 #endif
