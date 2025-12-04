@@ -8,33 +8,30 @@ Hours_Time hours_Time;
 #include "Animations.h"
 Animations animations;
 
-#include "ConnectWifi.h"
+#include "WifiConnect.h"
 
 const char* SSID = "PERIGO";
-const char* PASSWORD = "LIBER@RWIFI3";
+const char* PASSWORD = "LIBER@RWIFI";
 
-ConnectWifi connectWifi = ConnectWifi(SSID, PASSWORD);
+WifiConnect wifiConnect = WifiConnect(SSID, PASSWORD);
+
 
 void setup() {
   Serial.begin(115200);
-  connectWifi.connectionsMethod();
-
+  wifiConnect.connectionsMethod();
   animations.helloWordMochi();
   hours_Time.time_server();
 }
 
 void loop() {
-  //animations.animationsLoop();
-
-  //animations.animeScreen("Mochi");
-
-  bool nonect_wifi = connectWifi.connect_status();
+  bool nonect_wifi = wifiConnect.connect_status();
   if(nonect_wifi == true){
     Serial.println("Conectado com sucesso!");
+    animations.animationsLoop();
   }else{
     animations.not_wifi();
   }
-
+  //delay(5000);
   //CONSOLE
   console.consoleView();
 }

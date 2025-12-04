@@ -51,10 +51,12 @@ def varrerDados():
 			driver.find_element(By.XPATH, "//input[@id='txtResizeY']").clear()
 			driver.find_element(By.XPATH, "//input[@id='txtResizeY']").send_keys("64")
 			print("Valores X e Y inseridos.")
-			driver.find_element(By.XPATH, "//input[@id='cbUnsigned']").click()	#checked
-			time.sleep(1)
+			# --- MODIFICAÇÃO AQUI ---
+			checkbox_unsigned = driver.find_element(By.XPATH, "//input[@id='cbUnsigned']") # unsigned
+			if not checkbox_unsigned.is_selected():
+				checkbox_unsigned.click() # unsigned (marca se ainda não estiver marcado)
+			# -----------------------	
 			driver.find_element(By.XPATH, "//option[@value='char']").click() #options
-			time.sleep(1)
 			driver.find_element(By.XPATH, "//input[@id='btnConvert']").click() #options
 			time.sleep(2)
 			textarea_element = driver.find_element(By.XPATH, "//textarea[@id='txtResult']") #click
@@ -66,17 +68,17 @@ def varrerDados():
 			pasta_destino = Path('./frame')
 			pasta_destino.mkdir(exist_ok=True) # Cria a pasta se ela não existir
 			# Define o nome do arquivo de saída (ex: frame_0.h, frame_1.h)
-			output_filename = f"frame_{x}.h"
+			output_filename = f"frame_{x + 1:03d}.h"
 			output_filepath = pasta_destino / output_filename
 
 			# Abre o arquivo em modo de escrita ('w') com codificação UTF-8 e escreve o conteúdo
 			with open(output_filepath, 'w', encoding='utf-8') as f:
 				f.write(conteudo_h)
-			
+				pass
+
+			print(f"Conteúdo do frame {x + 1:03d} salvo em {output_filepath}\n")
+
 			time.sleep(2)	
-			print(f"Conteúdo do frame {x} salvo em {output_filepath}\n")
-
-
 	except:
 		print(f'Sem acesso ao Site')
 	finally:
