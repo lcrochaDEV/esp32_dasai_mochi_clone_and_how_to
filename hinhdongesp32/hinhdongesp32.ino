@@ -2,8 +2,11 @@
 #include "Console.h"
 Console console;
 
+
+const char* hours_down = "22:30";
+const char* hours_up = "06:00";
 #include "Hours_Time.h"
-Hours_Time hours_Time;
+Hours_Time hours_Time = Hours_Time(hours_up, hours_down);
 
 #include "Animations.h"
 Animations animations;
@@ -26,12 +29,11 @@ void setup() {
 void loop() {
   bool nonect_wifi = wifiConnect.connect_status();
   if(nonect_wifi == true){
-    Serial.println("Conectado com sucesso!");
     animations.animationsLoop();
   }else{
     animations.not_wifi();
   }
-  //delay(5000);
+  hours_Time.weke_on();
   //CONSOLE
   console.consoleView();
 }

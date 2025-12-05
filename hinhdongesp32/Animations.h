@@ -10,6 +10,7 @@ class Animations {
     void animationsLoop();
     void animeScreen(String consoleText);
     void not_wifi();
+    void control_oled_power(bool enable);
 
   private:
     String animations;

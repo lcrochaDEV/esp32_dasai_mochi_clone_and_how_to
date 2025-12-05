@@ -2,12 +2,17 @@
 
 #include "Hours_Time.h"
 
-Hours_Time::Hours_Time(long  gmtOffset_sec, int daylightOffset_sec, const char* ntpServer){
+Hours_Time::Hours_Time(const char* hours_up, const char* hours_down, const char* date, long  gmtOffset_sec, int daylightOffset_sec, const char* ntpServer, Animations* animationPtr){
   // Configurações de Fuso Horário e NTP
   // Fuso horário de Brasília (GMT -3)
+  this->hours_up = hours_up;
+  this->hours_down = hours_down;
+  this->date = date;
   this->gmtOffset_sec = gmtOffset_sec;
   this->daylightOffset_sec = daylightOffset_sec;  // 0 para não usar Horário de Verão
   this->ntpServer = ntpServer;
+  // Salva a referência do objeto Animations
+  this->animationRef = animationPtr;
 }
 
 void Hours_Time::time_server(){
@@ -51,5 +56,20 @@ void Hours_Time::calendar() {
 }
 
 void Hours_Time::weke_on(){
-
+    struct tm timeinfo; // 1. Declara onde a hora será armazenada
+    if (getLocalTime(&timeinfo)) { // 2. Pega a hora (verifica se foi sucesso)
+        char currentTimeStr[6]; // 3. Declara onde a string formatada será armazenada
+        // 4. Formata a hora para a string (ex: de números para "18:00")
+        strftime(currentTimeStr, sizeof(currentTimeStr), "%H:%M", &timeinfo); 
+        // 5. Compara a string formatada com a sua string de referência
+        if (strcmp(this->hours_down, currentTimeStr) == 0) {
+            //Serial.println("Hora de Desligamento atingida!");
+            // 🎯 AÇÃO: Desliga o display
+            this->animationRef->control_oled_power(false);
+        }else if (strcmp(this->hours_up, currentTimeStr) == 0){
+            Serial.println("Hora de Ligar atingida!");
+            // 🎯 AÇÃO: Liga o display
+            this->animationRef->control_oled_power(true);
+        }
+    }
 }

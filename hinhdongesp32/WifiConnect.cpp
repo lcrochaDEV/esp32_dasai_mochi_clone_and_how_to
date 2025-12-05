@@ -37,7 +37,7 @@ void WifiConnect::connectionsMethod(){
 
 bool WifiConnect::connect_status(){
     if (WiFi.status() == WL_CONNECTED) {
-      Serial.println("\nWifi Conectado!");
+      //Serial.println("\nWifi Conectado!");
         return true; // Retorna TRUE, indicando sucesso.
     } else {
       Serial.println("\nWifi Desconectado!");

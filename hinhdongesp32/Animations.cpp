@@ -90,3 +90,18 @@ void Animations::animeScreen(String consoleText = "Hello Mochi"){
   display.display();
 }
 
+void Animations::control_oled_power(bool enable) {
+    if (enable) {
+        // LIGA o display (sai do modo de suspensão)
+        display.ssd1306_command(SSD1306_DISPLAYON);
+        Serial.println("Display OLED LIGADO.");
+    } else {
+        // DESLIGA o display (entra em modo de suspensão)
+        // O comando SSD1306_DISPLAYOFF coloca o controlador do display em sleep mode.
+        display.ssd1306_command(SSD1306_DISPLAYOFF);
+        // Opcional: Limpar a tela antes de desligar completamente
+        display.clearDisplay(); 
+        display.display();
+        Serial.println("Display OLED DESLIGADO (Sleep Mode).");
+    }
+}
