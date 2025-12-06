@@ -68,6 +68,7 @@ void Animations::not_wifi(){
   static int currentFrame = 0;
   setFrameData(not_connet);
 }
+
 void Animations::animeScreen(String consoleText = "Hello Mochi"){
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println(F("Falha no display"));

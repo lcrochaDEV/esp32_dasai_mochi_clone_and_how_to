@@ -3,8 +3,8 @@
 Console console;
 
 
-const char* hours_down = "22:30";
-const char* hours_up = "06:00";
+const char* hours_down = "19:18";
+const char* hours_up = "06:30";
 #include "Hours_Time.h"
 Hours_Time hours_Time = Hours_Time(hours_up, hours_down);
 
@@ -14,7 +14,7 @@ Animations animations;
 #include "WifiConnect.h"
 
 const char* SSID = "PERIGO";
-const char* PASSWORD = "LIBER@RWIFI";
+const char* PASSWORD = "LIBER@RWIFI2";
 
 WifiConnect wifiConnect = WifiConnect(SSID, PASSWORD);
 
@@ -37,4 +37,3 @@ void loop() {
   //CONSOLE
   console.consoleView();
 }
-

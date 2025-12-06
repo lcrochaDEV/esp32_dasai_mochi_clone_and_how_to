@@ -25,13 +25,18 @@ void WifiConnect::connectionsMethod(){
     Serial.print(".");
     tentativaAtual++; // Incrementa o contador
   }
-  Serial.println("\nConectado ao Wi-Fi!");
-  Serial.print("Endereco IP: ");
-  Serial.println(WiFi.localIP());
-  Serial.print("Endereco MAC do Gateway: ");
-  Serial.println(WiFi.macAddress()); // Anote este MAC para usar no codigo do Sender
-  Serial.print("Canal Wi-Fi atual: ");
-  Serial.println(WiFi.channel()); // Todos os senders devem usar este canal
+
+  if(WiFi.status() == WL_CONNECTED){
+    Serial.println("\nConectado ao Wi-Fi!");
+    Serial.print("Endereco IP: ");
+    Serial.println(WiFi.localIP());
+    Serial.print("Endereco MAC do Gateway: ");
+    Serial.println(WiFi.macAddress()); // Anote este MAC para usar no codigo do Sender
+    Serial.print("Canal Wi-Fi atual: ");
+    Serial.println(WiFi.channel()); // Todos os senders devem usar este canal
+  }else{
+    Serial.println("\nWifi Desconectado!");
+  }
 }
 
 
@@ -39,8 +44,8 @@ bool WifiConnect::connect_status(){
     if (WiFi.status() == WL_CONNECTED) {
       //Serial.println("\nWifi Conectado!");
         return true; // Retorna TRUE, indicando sucesso.
+
     } else {
-      Serial.println("\nWifi Desconectado!");
         return false; // Retorna FALSE, indicando falha.
   }
 }

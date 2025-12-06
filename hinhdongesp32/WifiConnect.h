@@ -5,6 +5,8 @@
 
 #include <WiFi.h>
 
+#include "Animations.h"
+
 class WifiConnect {
   public:
     WifiConnect(const char* ssid = nullptr, const char* password = nullptr);
