@@ -15,8 +15,8 @@ class Hours_Time {
   private:
     // Configurações de Fuso Horário e NTP
     // Fuso horário de Brasília (GMT -3)
-    const char* hours_up;
-    const char* hours_down;
+    const char* hours_up;   // hours_up: Deve ser o início do período noturno (22:00).
+    const char* hours_down; // hours_down: Deve ser o fim do período noturno (06:00).
     const char* date;
     long gmtOffset_sec;
     int daylightOffset_sec; // 0 para não usar Horário de Verão

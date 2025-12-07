@@ -93,14 +93,14 @@ void Hours_Time::weke_on(){
 
 // Esta função é chamada por um evento externo (p. ex., um botão)
 void Hours_Time::manual_turn_on() {
-    // 1. Pega a hora atual (necessário para checar se estamos no período 06:00-22:00)
+    // 1. Pega a hora atual (necessário para checar se estamos no período 22:00-06:00)
     struct tm timeinfo;
     if (getLocalTime(&timeinfo)) {
        char currentTimeStr[6]; // 3. Declara onde a string formatada será armazenada
         // 4. Formata a hora para a string (ex: de números para "18:00")
         strftime(currentTimeStr, sizeof(currentTimeStr), "%H:%M", &timeinfo); 
-        // 2. Verifica se estamos no período ATIVO (06:00 até 22:59)
-        if (strcmp(currentTimeStr, this->hours_up) >= 0 && strcmp(currentTimeStr, this->hours_down) < 0) {
+        // 2. Verifica se estamos no período ATIVO (22:00 até 06:00)
+        if (strcmp(currentTimeStr, this->hours_up) >= 0 || strcmp(currentTimeStr, this->hours_down) < 0) {
             // AÇÃO: Liga o display
             this->animationRef->control_oled_power(true);
             
