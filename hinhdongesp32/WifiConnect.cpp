@@ -10,19 +10,27 @@
   int maxTentativas = 10;
   int tentativaAtual = 0;
 
-WifiConnect::WifiConnect(const char* ssid, const char* password){
+WifiConnect::WifiConnect(const char* ssid, const char* password, Animations* animationPtr){
   this->ssid = ssid;
   this->password = password;
+  // Salva a referência do objeto Animations
+  this->wifiAnimationRef = animationPtr;
 }
+
 
 void WifiConnect::connectionsMethod(){
   //Serial.begin(115200);
   Serial.printf("Conectando a %s ", this->ssid);
   WiFi.begin(this->ssid, this->password); // Inicia a conexão
 
-  while (WiFi.status() != WL_CONNECTED && tentativaAtual < maxTentativas) { // Aguarda a conexão ser estabelecida
+  while (WiFi.status() != WL_CONNECTED) { // Aguarda a conexão ser estabelecida
     delay(500);
     Serial.print(".");
+    if(tentativaAtual == maxTentativas){
+      this->wifiAnimationRef->not_wifi();
+      Serial.println("\nFalha ao conectar Wifi!");
+      Serial.print("\nConectando");
+    }
     tentativaAtual++; // Incrementa o contador
   }
 
@@ -34,8 +42,6 @@ void WifiConnect::connectionsMethod(){
     Serial.println(WiFi.macAddress()); // Anote este MAC para usar no codigo do Sender
     Serial.print("Canal Wi-Fi atual: ");
     Serial.println(WiFi.channel()); // Todos os senders devem usar este canal
-  }else{
-    Serial.println("\nWifi Desconectado!");
   }
 }
 

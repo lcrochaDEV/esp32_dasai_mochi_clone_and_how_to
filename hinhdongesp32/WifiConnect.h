@@ -9,13 +9,15 @@
 
 class WifiConnect {
   public:
-    WifiConnect(const char* ssid = nullptr, const char* password = nullptr);
+    WifiConnect(const char* ssid = nullptr, const char* password = nullptr, Animations* animationPtr = nullptr);
     void connectionsMethod();
     bool connect_status();
 
   private:
     const char* ssid; 
     const char* password;
+    //CLASS ANIMATIONS
+    Animations* wifiAnimationRef;
 };
  
 #endif

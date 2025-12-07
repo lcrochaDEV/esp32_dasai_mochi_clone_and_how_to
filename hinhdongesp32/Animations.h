@@ -6,15 +6,14 @@
 class Animations {
   public:
     Animations();
-    void helloWordMochi();
+    void helloWordMochi(String consoleText = "Hello Mochi");
     void animationsLoop();
-    void animeScreen(String consoleText);
     void not_wifi();
     void control_oled_power(bool enable);
 
   private:
-    String animations;
     void setFrameData(const unsigned char* frameData[]);
+    String animations;
 };
 
 #endif

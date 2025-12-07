@@ -26,16 +26,27 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 Animations::Animations(){}
 
-void Animations::helloWordMochi(){
-  Serial.begin(115200);
+void Animations::helloWordMochi(String consoleText){
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-    Serial.println(F("SSD1306 allocation failed"));
+    Serial.println(F("Falha no display"));
     for(;;);
   }
+
   display.clearDisplay();
+  display.setTextSize(1);      
+  display.setTextColor(SSD1306_WHITE); 
+  display.setCursor(0, 10);      
+  display.println("Ola Mundo!"); // println pula para a próxima linha
+  
+  display.setTextSize(1);        // Aumenta o tamanho
+  display.setCursor(0, 30);      // Move o cursor para baixo
+  display.print(consoleText);    // Escreve sem pular linha
+  display.print("\nD.I.Y");        // Escreve um número
+
+  // --- O Passo Final ---
+  // Nada aparece até você chamar este comando:
   display.display();
-  Serial.println("OLED initialized");
-  Serial.println("@khoi2mai");
+  delay(5000);
 }
 
 void Animations::animationsLoop(){
@@ -65,30 +76,7 @@ void Animations::setFrameData(const unsigned char* frameData[]){
 }
 
 void Animations::not_wifi(){
-  static int currentFrame = 0;
   setFrameData(not_connet);
-}
-
-void Animations::animeScreen(String consoleText = "Hello Mochi"){
-  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-    Serial.println(F("Falha no display"));
-    for(;;);
-  }
-
-  display.clearDisplay();
-  display.setTextSize(1);      
-  display.setTextColor(SSD1306_WHITE); 
-  display.setCursor(0, 10);      
-  display.println("Ola Mundo!"); // println pula para a próxima linha
-  
-  display.setTextSize(2);        // Aumenta o tamanho
-  display.setCursor(0, 30);      // Move o cursor para baixo
-  display.print(consoleText);      // Escreve sem pular linha
-  display.print("D.I.Y");            // Escreve um número
-
-  // --- O Passo Final ---
-  // Nada aparece até você chamar este comando:
-  display.display();
 }
 
 void Animations::control_oled_power(bool enable) {
@@ -101,7 +89,7 @@ void Animations::control_oled_power(bool enable) {
         // O comando SSD1306_DISPLAYOFF coloca o controlador do display em sleep mode.
         display.ssd1306_command(SSD1306_DISPLAYOFF);
         // Opcional: Limpar a tela antes de desligar completamente
-        display.clearDisplay(); 
+        display.clearDisplay();
         display.display();
         Serial.println("Display OLED DESLIGADO (Sleep Mode).");
     }

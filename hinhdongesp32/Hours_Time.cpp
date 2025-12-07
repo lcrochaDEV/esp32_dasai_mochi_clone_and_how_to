@@ -20,7 +20,7 @@ void Hours_Time::time_server(){
   // 2. Configuração do Serviço de Tempo (NTP)
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
     
-  Serial.println("Serviço NTP configurado. Aguardando a primeira sincronização...");
+  Serial.println("\nServiço NTP configurado. Aguardando a primeira sincronização...");
   calendar();
   manual_turn_on();
 }
@@ -90,7 +90,6 @@ void Hours_Time::weke_on(){
         } 
     }
 }
-
 
 // Esta função é chamada por um evento externo (p. ex., um botão)
 void Hours_Time::manual_turn_on() {

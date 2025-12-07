@@ -9,31 +9,25 @@ const char* hours_up = "06:30";
 Hours_Time hours_Time = Hours_Time(hours_up, hours_down);
 
 #include "Animations.h"
-Animations animations;
+Animations animations_exec;
 
 #include "WifiConnect.h"
 
 const char* SSID = "PERIGO";
-const char* PASSWORD = "LIBER@RWIFI2";
+const char* PASSWORD = "LIBER@RWIFI";
 
 WifiConnect wifiConnect = WifiConnect(SSID, PASSWORD);
 
 
 void setup() {
   Serial.begin(115200);
+  animations_exec.helloWordMochi();
   wifiConnect.connectionsMethod();
-  animations.helloWordMochi();
   hours_Time.time_server();
 }
 
 void loop() {
-  bool nonect_wifi = wifiConnect.connect_status();
-  if(nonect_wifi == true){
-    animations.animationsLoop();
-  }else{
-    animations.not_wifi();
-  }
-  hours_Time.weke_on();
+  animations_exec.animationsLoop();
   //CONSOLE
   console.consoleView();
 }
