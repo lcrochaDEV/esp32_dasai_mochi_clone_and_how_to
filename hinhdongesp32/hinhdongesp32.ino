@@ -3,10 +3,10 @@
 Console console;
 
 
-const char* hours_down = "19:18";
-const char* hours_up = "06:30";
+const char* hours_down = "22:00";
+const char* hours_up = "06:30"
 #include "Hours_Time.h"
-Hours_Time hours_Time = Hours_Time(hours_up, hours_down);
+Hours_Time hours_Time_exec = Hours_Time(hours_up, hours_down);
 
 #include "Animations.h"
 Animations animations_exec;
@@ -23,11 +23,12 @@ void setup() {
   Serial.begin(115200);
   animations_exec.helloWordMochi();
   wifiConnect.connectionsMethod();
-  hours_Time.time_server();
+  hours_Time_exec.time_server();
 }
 
 void loop() {
   animations_exec.animationsLoop();
+  hours_Time_exec.weke_on();
   //CONSOLE
   console.consoleView();
 }

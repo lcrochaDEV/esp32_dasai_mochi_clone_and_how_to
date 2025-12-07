@@ -41,7 +41,7 @@ void Animations::helloWordMochi(String consoleText){
   display.setTextSize(1);        // Aumenta o tamanho
   display.setCursor(0, 30);      // Move o cursor para baixo
   display.print(consoleText);    // Escreve sem pular linha
-  display.print("\nD.I.Y");        // Escreve um número
+  display.println("\nD.I.Y");        // Escreve um número
 
   // --- O Passo Final ---
   // Nada aparece até você chamar este comando:
