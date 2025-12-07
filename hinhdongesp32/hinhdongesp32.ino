@@ -4,7 +4,7 @@ Console console;
 
 
 const char* hours_down = "22:00";
-const char* hours_up = "06:30"
+const char* hours_up = "06:30";
 #include "Hours_Time.h"
 Hours_Time hours_Time_exec = Hours_Time(hours_up, hours_down);
 
