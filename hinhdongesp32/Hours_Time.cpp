@@ -3,11 +3,11 @@
 
 #include "Hours_Time.h"
 
-Hours_Time::Hours_Time(const char* hours_up, const char* hours_down, const char* date, long  gmtOffset_sec, int daylightOffset_sec, const char* ntpServer, Animations* animationPtr){
+Hours_Time::Hours_Time(const char* hours_sleep, const char* hours_wakeon, const char* date, long  gmtOffset_sec, int daylightOffset_sec, const char* ntpServer, Animations* animationPtr){
   // Configurações de Fuso Horário e NTP
   // Fuso horário de Brasília (GMT -3)
-  this->hours_up = hours_up;
-  this->hours_down = hours_down;
+  this->hours_sleep = hours_sleep;
+  this->hours_wakeon = hours_wakeon;
   this->date = date;
   this->gmtOffset_sec = gmtOffset_sec;
   this->daylightOffset_sec = daylightOffset_sec;  // 0 para não usar Horário de Verão
@@ -79,11 +79,11 @@ void Hours_Time::weke_on(){
         // 4. Formata a hora para a string (ex: de números para "18:00")
         strftime(currentTimeStr, sizeof(currentTimeStr), "%H:%M", &timeinfo);
         // 5. Compara a string formatada com a sua string de referência
-        if (strcmp(this->hours_down, currentTimeStr) == 0) {
+        if (strcmp(this->hours_sleep, currentTimeStr) == 0) {
             //Serial.println("Hora de Desligamento atingida!");
             // 🎯 AÇÃO: Desliga o display
             this->animationRef->control_oled_power(false);
-        }else if (strcmp(this->hours_up, currentTimeStr) == 0){
+        }else if (strcmp(this->hours_wakeon, currentTimeStr) == 0){
             Serial.println("Hora de Ligar atingida!");
             // 🎯 AÇÃO: Liga o display
             this->animationRef->control_oled_power(true);
@@ -100,7 +100,7 @@ void Hours_Time::manual_turn_on() {
         // 4. Formata a hora para a string (ex: de números para "18:00")
         strftime(currentTimeStr, sizeof(currentTimeStr), "%H:%M", &timeinfo); 
         // 2. Verifica se estamos no período ATIVO (22:00 até 06:00)
-        if (strcmp(currentTimeStr, this->hours_up) >= 0 || strcmp(currentTimeStr, this->hours_down) < 0) {
+        if (strcmp(currentTimeStr, this->hours_sleep) >= 0 || strcmp(currentTimeStr, this->hours_wakeon) < 0) {
             // AÇÃO: Liga o display
             this->animationRef->control_oled_power(true);
             

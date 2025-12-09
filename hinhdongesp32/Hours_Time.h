@@ -7,7 +7,7 @@
 
 class Hours_Time {
   public:
-    Hours_Time(const char* hours_up = "", const char* hours_down = "", const char* date = "", long gmtOffset_sec = -3 * 3600, int daylightOffset_sec = 0, const char* ntpServer = "pool.ntp.org", Animations* animationPtr = nullptr);
+    Hours_Time(const char* hours_sleep = "", const char* hours_wakeon = "", const char* date = "", long gmtOffset_sec = -3 * 3600, int daylightOffset_sec = 0, const char* ntpServer = "pool.ntp.org", Animations* animationPtr = nullptr);
     //METODO DE TODO O PROGRAMA
     void time_server();
     void weke_on();
@@ -15,8 +15,8 @@ class Hours_Time {
   private:
     // Configurações de Fuso Horário e NTP
     // Fuso horário de Brasília (GMT -3)
-    const char* hours_up;   // hours_up: Deve ser o início do período noturno (22:00).
-    const char* hours_down; // hours_down: Deve ser o fim do período noturno (06:00).
+    const char* hours_sleep;   // hours_sleep: Deve ser o início do período noturno (22:00).
+    const char* hours_wakeon;  // hours_wakeon: Deve ser o fim do período noturno (06:00).
     const char* date;
     long gmtOffset_sec;
     int daylightOffset_sec; // 0 para não usar Horário de Verão
