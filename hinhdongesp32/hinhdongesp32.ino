@@ -13,6 +13,8 @@ Animations animations_exec;
 
 #include "WifiConnect.h"
 
+#include "servidorweb.h"
+
 const char* SSID = "PERIGO";
 const char* PASSWORD = "LIBER@RWIFI";
 
@@ -24,11 +26,12 @@ void setup() {
   animations_exec.helloWordMochi();
   wifiConnect.connectionsMethod();
   hours_Time_exec.time_server();
+  startServer(true);
 }
-
 void loop() {
   animations_exec.animationsLoop();
   hours_Time_exec.weke_on();
   //CONSOLE
   console.consoleView();
+  run();
 }

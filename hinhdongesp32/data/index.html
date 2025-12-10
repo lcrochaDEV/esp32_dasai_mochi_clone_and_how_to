@@ -1,0 +1,163 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <title>Mochi D.I.Y</title>
+    <style>
+        :root {
+            --color-font: #ffffff;
+            --color-boder: rgba(148, 141, 135, 0.167);
+            --bg-header: rgba(148, 141, 135, 0.167);
+            --accent-light: #a78bfa;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: content-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        html {
+            background: rgba(26, 13, 46, 0.95);
+        }
+        header {
+            width: 100%;
+            background-color: var(--bg-header);
+            backdrop-filter: blur(10px);
+            opacity: .7;
+            color: var(--color-font);
+        }
+        .img {
+            display: flex;
+            justify-content: space-between;
+        }
+        .mochi, .dasai {
+            width: 100px;
+            margin: 5px;
+        }
+        section {
+            display: flex;
+            justify-content: start;
+            color: var(--color-font);
+            margin-top: 10px;
+            margin-left: 5px;
+        }
+        .conteiner{
+            background-color: var(--bg-header);
+            border-radius: 5px;
+            margin-right: 12px;
+            border: 1px solid;
+            border-color: var(--accent-light);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+        }
+        section h3, p {
+            margin: 10px 15px;
+        }
+        .conteiner span {
+            font-weight: bold;
+        }
+        .conteiner_sw {
+            display: flex;
+            justify-content: space-between;
+            margin: 0 10px 10px 0;
+        }
+        .switch {
+            margin-left: -9999px;
+            visibility: hidden;
+            position: relative;
+        }
+
+        .switch + label {
+            display: block;
+            position: relative;
+            cursor: pointer;
+            outline: none;
+            user-select: none;
+        }
+        .switch--shadow + label {
+            padding: 2px;
+            width: 35px;
+            height: 20px;
+            background-color: #dddddd;
+            border-radius: 30px;
+        }
+        .switch--shadow + label:before,
+        .switch--shadow + label:after {
+            display: block;
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            bottom: 1px;
+            content: '';
+        }
+        .switch--shadow + label:before {
+            right: 1px;
+            background-color: #f1f1f1;
+            border-radius: 30px;
+            transition: all 0.4s;
+        }
+        .switch--shadow + label:after {
+            width: 30px;
+            background-color: #fff;
+            border-radius: 100%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s;
+        }
+        .switch--shadow:checked + label:before {
+            background-color: #8ce196;
+        }
+        .switch--shadow:checked + label:after {
+            transform: translateX(8px);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="img">
+            <img class="mochi" src="https://dasai.com.au/cdn/shop/files/logo_2.png?v=1746165958&width=4370" alt="mochi">
+            <img class="dasai" src="https://tenereteam.s3.us-west-1.amazonaws.com/dasai-logo-updated.png?v=1762691630" alt="dasai">
+        </div>
+    </header>
+    <section>
+        <div class="conteiner">
+            <h3>Redes</h3>
+            <div class="conteiner_sw">
+                <p><span>WIFI:</span></p>
+                <div class="switch__container">
+                    <input id="switch-wifi" class="switch switch--shadow" type="checkbox" />
+                    <label for="switch-wifi"></label>
+                </div>
+            </div>
+            <p><span>SSID:</span> Nome</p>
+            <p><span>Password:</span> *******</p>
+            <p><span>IP Address:</span> 0.0.0.0</p>
+            <p><span>MAC Address:</span> 00-00-00-00-00-00</p>
+            <div class="conteiner_sw">
+                <p><span>Bluetooth:</span></p>
+                <div class="switch__container">
+                    <!-- Este agora é exclusivo para Bluetooth -->
+                    <input id="switch-bluetooth" class="switch switch--shadow" type="checkbox" />
+                    <label for="switch-bluetooth"></label>
+                </div>
+            </div>
+        </div>
+        <div class="conteiner">
+            <h3>Configurações</h3>
+            <div class="conteiner_sw">
+                <p><span>Servidor Web:</span></p>
+                <div class="switch__container">
+                    <!-- Este agora é exclusivo para Servidor Web -->
+                    <input id="switch-webserver" class="switch switch--shadow" type="checkbox" />
+                    <label for="switch-webserver"></label>
+                </div>
+            </div>
+            <h3>Wakeon Mode</h3>
+            <p><span>Wakon:</span> 00:00</p>
+            <p><span>Sleep:</span> 00:00</p>
+        </div>
+        <div class="conteiner">
+        </div>
+    </section>
+</body>
+</html>
