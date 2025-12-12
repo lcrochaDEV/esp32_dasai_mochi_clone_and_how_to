@@ -11,20 +11,18 @@ Hours_Time hours_Time_exec = Hours_Time(hours_sleep, hours_wakeon);
 #include "Animations.h"
 Animations animations_exec;
 
-#include "WifiConnect.h"
-
+#include "WirelessConnection.h"
 #include "servidorweb.h"
 
 const char* SSID = "PERIGO";
 const char* PASSWORD = "LIBER@RWIFI";
 
-WifiConnect wifiConnect = WifiConnect(SSID, PASSWORD);
-
+WirelessConnection wirelessConnection = WirelessConnection(SSID, PASSWORD);
 
 void setup() {
   Serial.begin(115200);
   animations_exec.helloWordMochi();
-  wifiConnect.connectionsMethod();
+  wirelessConnection.connections_Wifi();
   hours_Time_exec.time_server();
   startServer(true);
 }
@@ -34,4 +32,7 @@ void loop() {
   //CONSOLE
   console.consoleView();
   run();
+
+  wirelessConnection.searchRedes();
+  
 }

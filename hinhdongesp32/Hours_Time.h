@@ -7,7 +7,7 @@
 
 class Hours_Time {
   public:
-    Hours_Time(const char* hours_sleep = "", const char* hours_wakeon = "", const char* date = "", long gmtOffset_sec = -3 * 3600, int daylightOffset_sec = 0, const char* ntpServer = "pool.ntp.org", Animations* animationPtr = nullptr);
+    Hours_Time(const char* hours_sleep = "--:--", const char* hours_wakeon = "--:--", const char* date = "", long gmtOffset_sec = -3 * 3600, int daylightOffset_sec = 0, const char* ntpServer = "pool.ntp.org", Animations* animationPtr = nullptr);
     //METODO DE TODO O PROGRAMA
     void time_server();
     void weke_on();

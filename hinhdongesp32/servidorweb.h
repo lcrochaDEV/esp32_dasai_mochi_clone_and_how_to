@@ -4,6 +4,7 @@
 #include <WebServer.h>
 #include <uri/UriBraces.h>
 #include <WiFi.h>
+#include "LittleFS.h"
 
 #include "Hours_Time.h"
 Hours_Time timeManager;
@@ -12,6 +13,7 @@ WebServer server(80);
 bool wifiState = false;
 bool bluetoothState = false;
 bool webserverState = false;
+
 
 String getSwitchState(bool state) {
     // Retorna "checked" se o estado for true (ligado), ou uma string vazia se for false (desligado)
@@ -187,6 +189,7 @@ void sendHtml() {
         </body>
         </html>
     )";
+    
 // --- INJEÇÃO DE VALORES DINÂMICOS ---
     response.replace("WIFI_STATE", getSwitchState(wifiState));
     response.replace("BLUETOOTH_STATE", getSwitchState(bluetoothState));
@@ -211,6 +214,12 @@ void handleToggle() {
         if (device == "wifi") {
             wifiState = newState;
             // Aqui você deve adicionar a lógica de conexão/desconexão real do WiFi (WiFi.begin(), WiFi.disconnect(), etc.)
+            if (!newState) {
+                WiFi.disconnect(true); // Desconecta da rede
+                Serial.println("Desligando WiFi...");
+                WiFi.mode(WIFI_OFF); // Desliga a interface Wi-Fi
+                Serial.println("WiFi desligado.");
+            }
             Serial.print("WiFi Toggled: "); Serial.println(wifiState);
         } else if (device == "bluetooth") {
             bluetoothState = newState;
@@ -243,6 +252,7 @@ void startServer(bool initialWifiState) {
   server.begin();
   webserverState = true;
   Serial.println("HTTP server started");
+  Serial.println("-------------------");
 }
 
 void run(void) {
