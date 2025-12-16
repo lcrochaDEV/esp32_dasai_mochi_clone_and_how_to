@@ -1,12 +1,12 @@
+#include <algorithm>
 #include "Console.h"
 #include "Animations.h"
 
-//extern Animations animations;
 
 //MENSAGEM DE TODO O PROGRAMA
-Console::Console(String consoleText) {
-  this->consoleTextView = consoleText;
-}
+Console::Console(const char* consoleText)
+  : consoleText(consoleText)
+{}
 void Console::helloWord(String consoleText) {
   menssageViewMsg(consoleText);
 }
@@ -25,6 +25,8 @@ void Console::consoleView() {
 }
 
 void Console::commands_envio(String consoleText) {
-  menssageViewMsg(consoleText);
-  // animations.prompt_command("hello");
+  menssageViewMsg("Mochi> " + consoleText);
+  if (consoleText == "SCAN"){
+    this->searchRedes();
+  }
 }

@@ -56,7 +56,6 @@ void Hours_Time::calendar() {
   delay(10000); 
 }
 
-
 void Hours_Time::weke_on(){
     // --- PARTE NOVA: CONTROLE DE TIMEOUT ---
     // Verifica se estamos no modo manual E se o tempo expirou

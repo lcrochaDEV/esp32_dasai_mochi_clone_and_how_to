@@ -1,0 +1,279 @@
+:root {
+    --color-font: #ffffff;
+    --color-boder: rgba(148, 141, 135, 0.167);
+    --bg-header: rgba(148, 141, 135, 0.167);
+    --accent-light: #a78bfa;
+}
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: content-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+html {
+    background: rgba(26, 13, 46, 0.95);
+}
+nav {
+    width: 100%;
+    background-color: var(--bg-header);
+    backdrop-filter: blur(10px);
+    opacity: .9;
+    color: var(--color-font);
+}
+.conteiner_nav {
+    display: flex;
+    justify-content: space-between;
+}
+.menu {
+    display: flex;
+    justify-items: start;
+}
+.menu ul {
+    margin: 20px 50px;
+    list-style-type: none;
+    display: flex;
+}
+.menu a {
+    color: #ffffff;
+    text-decoration: none;
+    padding: 20px;
+}
+.menu ul li a:hover {
+    background-color: rgba(17, 17, 17, 0.295);
+    border-bottom: 1px solid;
+    border-color: var(--accent-light);
+
+}
+.conteiner_right {
+    display: flex;
+    justify-content: space-between;           
+}
+.data_hora {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    border: 0;
+    padding: 0;
+}
+.data_hora p {
+    border: 0;
+    margin-top: 7px;
+    margin-bottom: -2px;
+}
+.mochi, .dasai {
+    width: 100px;
+    margin: 5px;
+}
+.jukebox {
+    width: 55px;
+    position: relative;
+    top: 7px;
+    transform: rotate(5deg);
+}
+header, section {
+    display: flex;
+    justify-content: start;
+    color: var(--color-font);
+    margin-top: 10px;
+    margin-left: 5px;
+}
+.conteiner{
+    background-color: var(--bg-header);
+    border-radius: 5px;
+    margin-right: 12px;
+    border: 1px solid;
+    border-color: var(--accent-light);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+}
+
+header h3, p {
+    margin: 10px 15px;
+}
+.conteiner span {
+    font-weight: bold;
+}
+.conteiner_sw {
+    display: flex;
+    justify-content: space-between;
+    margin: 0 10px 10px 0;
+}
+.switch {
+    margin-left: -9999px;
+    visibility: hidden;
+    position: relative;
+}
+.switch + label {
+    display: block;
+    position: relative;
+    cursor: pointer;
+    outline: none;
+    user-select: none;
+}
+.switch--shadow + label {
+    padding: 2px;
+    width: 35px;
+    height: 20px;
+    background-color: #dddddd;
+    border-radius: 30px;
+}
+.switch--shadow + label:before,
+.switch--shadow + label:after {
+    display: block;
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    bottom: 1px;
+    content: '';
+}
+.switch--shadow + label:before {
+    right: 1px;
+    background-color: #f1f1f1;
+    border-radius: 30px;
+    transition: all 0.4s;
+}
+.switch--shadow + label:after {
+    width: 30px;
+    background-color: #fff;
+    border-radius: 100%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    transition: all 0.4s;
+}
+.switch--shadow:checked + label:before {
+    background-color: #8ce196;
+}
+.switch--shadow:checked + label:after {
+    transform: translateX(8px);
+}
+header h3, section h3 {
+    padding-bottom: 3px;
+    border-bottom: 1px solid;
+    border-color: var(--accent-light);  
+}
+section h3, p {
+    margin: 10px 15px;
+}
+/*NETWORK SCAN*/
+.conteiner_scan {
+    text-decoration: none;
+    margin: 10px 15px;
+    color: #fff;
+    font-weight: bold;
+}
+.conteiner_scan span {
+    font-weight: 400;
+    padding: 10px;
+}
+
+#passwordGroup input[type="text"], input[type="password"], input[type="range"] {
+    box-sizing: border-box;
+    margin-top: 10px;
+    height: 25px;
+}
+
+#passwordGroup button {
+    height: 25px;
+    background-color: #cf0844;
+    border-radius: 5px;
+    padding: 0 2px;
+    border: none;
+    color: #ffffff;
+}
+#passwordGroup {
+    /* Combinando transições para simplificar */
+    transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out, margin 0.5s ease-in-out;
+    overflow: hidden; /* ESSENCIAL para que max-height: 0 funcione */
+    
+    /* Estado Visível Padrão */
+    max-height: 200px; /* Suficiente para o seu conteúdo */
+    opacity: 1;
+    margin: 15px 0;
+}
+
+.oculto {
+    /* Estado Oculto */
+    max-height: 0 !important; /* Força a altura zero */
+    opacity: 0 !important;   /* Força a opacidade zero */
+    margin: 0 !important;    /* Força a margem zero */
+    
+    /* Se quiser a animação lenta (4s) APENAS ao sumir: */
+    transition-duration: 4s; 
+}
+/*FORMULÁRIO*/
+dialog#animationDialog {
+    /* Remove a borda e o fundo padrão do dialog para usar o estilo da div interna */
+    border: none;
+    padding: 0;
+    background-color: transparent;
+    color: white;
+}
+#closeDialogButton {
+    width: 20px;
+    border: none;
+    border-radius: 50%;
+    font-weight: bold;
+    position: relative;
+    left: 95%;
+    top: -10px;
+    background-color: #cf0844;
+}
+/* Aplica seus estilos existentes à div interna */
+.form-container {
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    max-width: 600px;
+    background-color: var(--bg-header);
+    border-radius: 5px;
+    border: 1px solid;
+    border-color: var(--accent-light);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+    margin: auto; /* Ajuda a centralizar o conteúdo dentro do dialog se necessário */
+    position: fixed; /* Fixa na viewport */
+    top: 50%;        /* Move o topo para o meio da tela */
+    left: 50%;       /* Move a esquerda para o meio da tela */
+    transform: translate(-50%, -50%); /* Ajusta 50% da largura/altura do próprio elemento de volta */
+    z-index: 1000;   /* Garante que fique acima de outros conteúdos */
+    margin: 0;     
+}
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: none; /* Controlado via JS junto com o formulário */
+}
+
+.form-container label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+input[type="text"], input[type="time"], textarea {
+    width: 100%;
+    padding: 10px 8px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+textarea {
+    height: 200px;
+    font-family: monospace;
+    overflow-y: scroll;
+    margin-bottom: 10px;
+}
+.form_btn {
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    float: right;
+}
+button:hover {
+    background-color: #0056b3;
+}

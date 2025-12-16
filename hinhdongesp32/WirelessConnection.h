@@ -4,8 +4,6 @@
 
 #include <Arduino.h>
 
-#include <WiFi.h>
-
 #include "WifiConnect.h"
 #include "BTConnect.h"
 #include "Animations.h"

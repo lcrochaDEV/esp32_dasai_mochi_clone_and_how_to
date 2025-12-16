@@ -21,18 +21,15 @@ WirelessConnection wirelessConnection = WirelessConnection(SSID, PASSWORD);
 
 void setup() {
   Serial.begin(115200);
-  animations_exec.helloWordMochi();
-  wirelessConnection.connections_Wifi();
-  hours_Time_exec.time_server();
-  startServer(true);
+  animations_exec.helloWordMochi(); //HELLO WORD
+  wirelessConnection.connections_Wifi(); // CONNECT WIFI
+  wirelessConnection.searchRedes(); //SCAN WIFI REDE
+  hours_Time_exec.time_server(); // TIME
+  startServer(); // START SERVIDOR WEB
 }
 void loop() {
   animations_exec.animationsLoop();
   hours_Time_exec.weke_on();
   //CONSOLE
   console.consoleView();
-  run();
-
-  wirelessConnection.searchRedes();
-  
 }

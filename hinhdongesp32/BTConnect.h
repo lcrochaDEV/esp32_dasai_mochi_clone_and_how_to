@@ -11,6 +11,7 @@ class BTConnect {
   public:
     BTConnect();
     void connections_bt(const char* bt_name = "MOCHI_BT");
+    void requestJsonData();
   protected:
 };
  

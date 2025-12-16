@@ -1,263 +1,694 @@
 #ifndef SERVIDORWEB_H
 #define SERVIDORWEB_H
 
-#include <WebServer.h>
-#include <uri/UriBraces.h>
 #include <WiFi.h>
-#include "LittleFS.h"
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
 
 #include "Hours_Time.h"
 Hours_Time timeManager;
 
-WebServer server(80);
+// Cria o objeto Servidor na porta 80 (porta HTTP padrão)
+AsyncWebServer server(80);
+
 bool wifiState = false;
 bool bluetoothState = false;
 bool webserverState = false;
 
+// Protótipos de Funções
+String getSwitchState(bool state);
+String processor(const String& var);
+void handleToggle(AsyncWebServerRequest *request);
+void handleDateTime(AsyncWebServerRequest *request);
 
 String getSwitchState(bool state) {
     // Retorna "checked" se o estado for true (ligado), ou uma string vazia se for false (desligado)
     return state ? "checked" : ""; 
 }
 
-void sendHtml() {
-    const char* sleepTime = timeManager.getHoursSleep();
-    const char* wakeTime = timeManager.getHoursWakeon();
+// Função que retorna a página HTML completa com o estado atual do LED
+const char index_html[] PROGMEM = R"rawliteral(
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="stayle.css">
+    <title>Mochi D.I.Y</title>
+    <style>
+        :root {
+            --color-font: #ffffff;
+            --color-boder: rgba(148, 141, 135, 0.167);
+            --bg-header: rgba(148, 141, 135, 0.167);
+            --accent-light: #a78bfa;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: content-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        html {
+            background: rgba(26, 13, 46, 0.95);
+        }
+        nav {
+            width: 100%;
+            background-color: var(--bg-header);
+            backdrop-filter: blur(10px);
+            opacity: .9;
+            color: var(--color-font);
+        }
+        .conteiner_nav {
+            display: flex;
+            justify-content: space-between;
+        }
+        .menu {
+            display: flex;
+            justify-items: start;
+        }
+        .menu ul {
+            margin: 20px 50px;
+            list-style-type: none;
+            display: flex;
+        }
+        .menu a {
+            color: #ffffff;
+            text-decoration: none;
+            padding: 20px;
+        }
+        .menu ul li a:hover {
+            background-color: rgba(17, 17, 17, 0.295);
+            border-bottom: 1px solid;
+            border-color: var(--accent-light);
 
-    String response = R"(
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta http-equiv="X-UA-Compatible" content="IE=edge">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-            <title>Mochi D.I.Y</title>
-            <style>
-                :root {
-                    --color-font: #ffffff;
-                    --color-boder: rgba(148, 141, 135, 0.167);
-                    --bg-header: rgba(148, 141, 135, 0.167);
-                    --accent-light: #a78bfa;
-                }
-                * {
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: content-box;
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                }
-                html {
-                    background: rgba(26, 13, 46, 0.95);
-                }
-                header {
-                    width: 100%;
-                    background-color: var(--bg-header);
-                    backdrop-filter: blur(10px);
-                    opacity: .7;
-                    color: var(--color-font);
-                }
-                .img {
-                    display: flex;
-                    justify-content: space-between;
-                }
-                .mochi, .dasai {
-                    width: 100px;
-                    margin: 5px;
-                }
-                section {
-                    display: flex;
-                    justify-content: start;
-                    color: var(--color-font);
-                    margin-top: 10px;
-                    margin-left: 5px;
-                }
-                .conteiner{
-                    background-color: var(--bg-header);
-                    border-radius: 5px;
-                    margin-right: 12px;
-                    border: 1px solid;
-                    border-color: var(--accent-light);
-                    box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
-                }
-                section h3, p {
-                    margin: 10px 15px;
-                }
-                .conteiner span {
-                    font-weight: bold;
-                }
-                .conteiner_sw {
-                    display: flex;
-                    justify-content: space-between;
-                    margin: 0 10px 10px 0;
-                }
-                .switch {
-                    margin-left: -9999px;
-                    visibility: hidden;
-                    position: relative;
-                }
+        }
+        .conteiner_right {
+            display: flex;
+            justify-content: space-between;           
+        }
+        .data_hora {
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            border: 0;
+            padding: 0;
+        }
+        .data_hora p {
+            border: 0;
+            margin-top: 7px;
+            margin-bottom: -2px;
+        }
+        .mochi, .dasai {
+            width: 100px;
+            margin: 5px;
+        }
+        .jukebox {
+            width: 55px;
+            position: relative;
+            top: 7px;
+            transform: rotate(5deg);
+        }
+        header, section {
+            display: flex;
+            justify-content: start;
+            color: var(--color-font);
+            margin-top: 10px;
+            margin-left: 5px;
+        }
+        .conteiner{
+            background-color: var(--bg-header);
+            border-radius: 5px;
+            margin-right: 12px;
+            border: 1px solid;
+            border-color: var(--accent-light);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+        }
 
-                .switch + label {
-                    display: block;
-                    position: relative;
-                    cursor: pointer;
-                    outline: none;
-                    user-select: none;
-                }
-                .switch--shadow + label {
-                    padding: 2px;
-                    width: 35px;
-                    height: 20px;
-                    background-color: #dddddd;
-                    border-radius: 30px;
-                }
-                .switch--shadow + label:before,
-                .switch--shadow + label:after {
-                    display: block;
-                    position: absolute;
-                    top: 1px;
-                    left: 1px;
-                    bottom: 1px;
-                    content: '';
-                }
-                .switch--shadow + label:before {
-                    right: 1px;
-                    background-color: #f1f1f1;
-                    border-radius: 30px;
-                    transition: all 0.4s;
-                }
-                .switch--shadow + label:after {
-                    width: 30px;
-                    background-color: #fff;
-                    border-radius: 100%;
-                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-                    transition: all 0.4s;
-                }
-                .switch--shadow:checked + label:before {
-                    background-color: #8ce196;
-                }
-                .switch--shadow:checked + label:after {
-                    transform: translateX(8px);
-                }
-            </style>
-        </head>
-        <body>
-            <header>
-                <div class="img">
-                    <img class="mochi" src="https://dasai.com.au/cdn/shop/files/logo_2.png?v=1746165958&width=4370" alt="mochi">
-                    <img class="dasai" src="https://tenereteam.s3.us-west-1.amazonaws.com/dasai-logo-updated.png?v=1762691630" alt="dasai">
+        header h3, p {
+            margin: 10px 15px;
+        }
+        .conteiner span {
+            font-weight: bold;
+        }
+        .conteiner_sw {
+            display: flex;
+            justify-content: space-between;
+            margin: 0 10px 10px 0;
+        }
+        .switch {
+            margin-left: -9999px;
+            visibility: hidden;
+            position: relative;
+        }
+        .switch + label {
+            display: block;
+            position: relative;
+            cursor: pointer;
+            outline: none;
+            user-select: none;
+        }
+        .switch--shadow + label {
+            padding: 2px;
+            width: 35px;
+            height: 20px;
+            background-color: #dddddd;
+            border-radius: 30px;
+        }
+        .switch--shadow + label:before,
+        .switch--shadow + label:after {
+            display: block;
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            bottom: 1px;
+            content: '';
+        }
+        .switch--shadow + label:before {
+            right: 1px;
+            background-color: #f1f1f1;
+            border-radius: 30px;
+            transition: all 0.4s;
+        }
+        .switch--shadow + label:after {
+            width: 30px;
+            background-color: #fff;
+            border-radius: 100%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s;
+        }
+        .switch--shadow:checked + label:before {
+            background-color: #8ce196;
+        }
+        .switch--shadow:checked + label:after {
+            transform: translateX(8px);
+        }
+        header h3, section h3 {
+            padding-bottom: 3px;
+            border-bottom: 1px solid;
+            border-color: var(--accent-light);  
+        }
+        section h3, p {
+            margin: 10px 15px;
+        }
+        /*NETWORK SCAN*/
+        .conteiner_scan {
+            text-decoration: none;
+            margin: 10px 15px;
+            color: #fff;
+            font-weight: bold;
+        }
+        .conteiner_scan span {
+            font-weight: 400;
+            padding: 10px;
+        }
+
+        #passwordGroup input[type="text"], input[type="password"], input[type="range"] {
+            box-sizing: border-box;
+            margin-top: 10px;
+            height: 25px;
+        }
+
+        #passwordGroup button {
+            height: 25px;
+            background-color: #cf0844;
+            border-radius: 5px;
+            padding: 0 2px;
+            border: none;
+            color: #ffffff;
+        }
+        #passwordGroup {
+            /* Combinando transições para simplificar */
+            transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out, margin 0.5s ease-in-out;
+            overflow: hidden; /* ESSENCIAL para que max-height: 0 funcione */
+            
+            /* Estado Visível Padrão */
+            max-height: 200px; /* Suficiente para o seu conteúdo */
+            opacity: 1;
+            margin: 15px 0;
+        }
+
+        .oculto {
+            /* Estado Oculto */
+            max-height: 0 !important; /* Força a altura zero */
+            opacity: 0 !important;   /* Força a opacidade zero */
+            margin: 0 !important;    /* Força a margem zero */
+            
+            /* Se quiser a animação lenta (4s) APENAS ao sumir: */
+            transition-duration: 4s; 
+        }
+        /*FORMULÁRIO*/
+        dialog#animationDialog {
+            /* Remove a borda e o fundo padrão do dialog para usar o estilo da div interna */
+            border: none;
+            padding: 0;
+            background-color: transparent;
+            color: white;
+        }
+        #closeDialogButton {
+            width: 20px;
+            border: none;
+            border-radius: 50%;
+            font-weight: bold;
+            position: relative;
+            left: 95%;
+            top: -10px;
+            background-color: #cf0844;
+        }
+        /* Aplica seus estilos existentes à div interna */
+        .form-container {
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 600px;
+            background-color: var(--bg-header);
+            border-radius: 5px;
+            border: 1px solid;
+            border-color: var(--accent-light);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+            margin: auto; /* Ajuda a centralizar o conteúdo dentro do dialog se necessário */
+            position: fixed; /* Fixa na viewport */
+            top: 50%;        /* Move o topo para o meio da tela */
+            left: 50%;       /* Move a esquerda para o meio da tela */
+            transform: translate(-50%, -50%); /* Ajusta 50% da largura/altura do próprio elemento de volta */
+            z-index: 1000;   /* Garante que fique acima de outros conteúdos */
+            margin: 0;     
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none; /* Controlado via JS junto com o formulário */
+        }
+
+        .form-container label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="time"], textarea {
+            width: 100%;
+            padding: 10px 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        textarea {
+            height: 200px;
+            font-family: monospace;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+        }
+        .form_btn {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            float: right;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="conteiner_nav">
+            <div class="menu">
+                <img class="mochi" src="https://dasai.com.au/cdn/shop/files/logo_2.png?v=1746165958&width=4370" alt="mochi">
+                <ul>
+                    <li class=""><a href="#">HOME</a></li>
+                    <li class="acultar_form"><a href="#">CADASTRO</a></li>
+                </ul>
+            </div>
+            <div class="conteiner_right">
+                <img class="jukebox" src="https://dasai.com.au/cdn/shop/files/gacha.png?v=1698886761&width=1842">
+                <div class="data_hora">
+                    <p id="current_hour">--:--:--</p>
+                    <p id="current_date">--/--/----</p>
                 </div>
-            </header>
-            <section>
-                <div class="conteiner">
-                    <h3>Redes</h3>
-                    <div class="conteiner_sw">
-                        <p><span>WIFI:</span></p>
-                        <div class="switch__container">
-                            <input id="switch-wifi" class="switch switch--shadow" type="checkbox" WIFI_STATE/>
-                            <label for="switch-wifi"></label>
-                        </div>
+                <img class="dasai" src="https://tenereteam.s3.us-west-1.amazonaws.com/dasai-logo-updated.png?v=1762691630" alt="dasai">
+            </div>
+        </div>
+    </nav>
+    <header>
+        <div class="conteiner">
+            <h3>Redes</h3>
+            <div class="conteiner_sw">
+                <p><span>WIFI:</span></p>
+                <div class="switch__container">
+                    <input id="switch-wifi" class="switch switch--shadow" type="checkbox" %WIFI_STATE%/>
+                    <label for="switch-wifi"></label>
+                </div>
+            </div>
+            <p><span>SSID: </span>%SSID_VALUE%</p>
+            <p><span>IP Address: </span>%IP_VALUE%</p>
+            <p><span>MAC Address: </span>%MAC_VALUE%</p>
+            <div class="conteiner_sw">
+                <p><span>Bluetooth:</span></p>
+                <div class="switch__container">
+                    <!-- Este agora é exclusivo para Bluetooth -->
+                    <input id="switch-bluetooth" class="switch switch--shadow" type="checkbox" %BLUETOOTH_STATE%/>
+                    <label for="switch-bluetooth"></label>
+                </div>
+            </div>
+        </div>
+        <div class="conteiner">
+            <h3>Configurações</h3>
+            <div class="conteiner_sw">
+                <p><span>Servidor Web:</span></p>
+                <div class="switch__container">
+                    <!-- Este agora é exclusivo para Servidor Web -->
+                    <input id="switch-webserver" class="switch switch--shadow" type="checkbox" %WEBSERVER_STATE%/>
+                    <label for="switch-webserver"></label>
+                </div>
+            </div>
+            <h3>Wakeon Mode</h3>
+            <p><span>Wakon: </span>%WAKEON_DISPLAY%</p>
+            <p><span>Sleep: </span>%SLEEP_DISPLAY%</p>
+        </div>
+        <!--<div class="conteiner"></div>-->
+        <dialog id="animationDialog">
+            <div class="form-container">
+                <button id="closeDialogButton" aria-label="Fechar formulário">X</button>
+                <h2>Configuração de Animação</h2>
+                <form id="animationForm">       
+                    <div class="form-group">
+                        <label for="name">Nome:</label>
+                        <input type="text" id="name">
                     </div>
-                    <p><span>SSID: </span>SSID_VALUE</p>
-                    <p><span>Password:</span> *******</p>
-                    <p><span>IP Address: </span>IP_VALUE</p>
-                    <p><span>MAC Address: </span>MAC_VALUE</p>
-                    <div class="conteiner_sw">
-                        <p><span>Bluetooth:</span></p>
-                        <div class="switch__container">
-                            <!-- Este agora é exclusivo para Bluetooth -->
-                            <input id="switch-bluetooth" class="switch switch--shadow" type="checkbox" BLUETOOTH_STATE/>
-                            <label for="switch-bluetooth"></label>
-                        </div>
+                    <div class="form-group">
+                        <label for="wake_up_time">Hora de Acordar:</label>
+                        <input type="time" id="wake_up_time">
                     </div>
-                </div>
-                <div class="conteiner">
-                    <h3>Configurações</h3>
-                    <div class="conteiner_sw">
-                        <p><span>Servidor Web:</span></p>
-                        <div class="switch__container">
-                            <!-- Este agora é exclusivo para Servidor Web -->
-                            <input id="switch-webserver" class="switch switch--shadow" type="checkbox" WEBSERVER_STATE/>
-                            <label for="switch-webserver"></label>
-                        </div>
+            
+                    <div class="form-group">
+                        <label for="sleep_time">Hora de Dormir:</label>
+                        <input type="time" id="sleep_time">
                     </div>
-                    <h3>Wakeon Mode</h3>
-                    <p><span>Wakon: </span>WAKEON_DISPLAY</p>
-                    <p><span>Sleep: </span>SLEEP_DISPLAY</p>
-                </div>
-                <div class="conteiner">
-                </div>
-            </section>
-        </body>
-        </html>
-    )";
-    
-// --- INJEÇÃO DE VALORES DINÂMICOS ---
-    response.replace("WIFI_STATE", getSwitchState(wifiState));
-    response.replace("BLUETOOTH_STATE", getSwitchState(bluetoothState));
-    response.replace("WEBSERVER_STATE", getSwitchState(webserverState));
-    
-    response.replace("SSID_VALUE", WiFi.SSID());
-    response.replace("IP_VALUE", WiFi.localIP().toString());
-    response.replace("MAC_VALUE", WiFi.macAddress());
-
-    response.replace("WAKEON_DISPLAY", wakeTime);
-    response.replace("SLEEP_DISPLAY", sleepTime);
-
-    server.send(200, "text/html", response);
-}
-
-void handleToggle() {
-    if (server.hasArg("device") && server.hasArg("state")) {
-        String device = server.arg("device");
-        String stateStr = server.arg("state");
-        bool newState = (stateStr == "on");
-
-        if (device == "wifi") {
-            wifiState = newState;
-            // Aqui você deve adicionar a lógica de conexão/desconexão real do WiFi (WiFi.begin(), WiFi.disconnect(), etc.)
-            if (!newState) {
-                WiFi.disconnect(true); // Desconecta da rede
-                Serial.println("Desligando WiFi...");
-                WiFi.mode(WIFI_OFF); // Desliga a interface Wi-Fi
-                Serial.println("WiFi desligado.");
-            }
-            Serial.print("WiFi Toggled: "); Serial.println(wifiState);
-        } else if (device == "bluetooth") {
-            bluetoothState = newState;
-            // Aqui você deve adicionar a lógica de ativação/desativação do Bluetooth (btStart(), btStop(), etc.)
-            Serial.print("Bluetooth Toggled: "); Serial.println(bluetoothState);
-        } else if (newState == false) {
-                // Adicional: Desliga o servidor se o switch for desativado
-                // Note: Você precisará de uma forma de religá-lo ou reiniciar o ESP32
-                server.stop(); 
-                Serial.println("Webserver stopped manually.");
+                    <!-- Seção para os frames -->
+                    <div id="framesContainer">
+                        <!-- Frames serão inseridos aqui via JS -->
+                        <div class="frame-section"></div>
+                    </div>
+            
+                    <button type="submit" class="form_btn">Cadastrar</button>
+                </form>
+            </div>
+        </dialog>
+    </header>
+    <section>
+        <div class="conteiner">
+            <h3>Network Scan</h3>
+            <div class="conteiner_scan">
+                <form id="networkForm">
+                    <div class="form-group">
+                        <input type="checkbox" id="isProtected">
+                        <label for="nomeRede">SSID: <span>NOME DA REDE</span></label>
+                        <label for="potencia">Potência: <span id="potenciaValor">50%</span></label>
+                    </div>
+                    <!-- Campo de Senha (Oculto por padrão) -->
+                    <div id="passwordGroup" class="oculto">
+                        <!--<label for="senha">Password: </label>-->
+                        <input type="password" id="senha" placeholder="Password" autocomplete="new-password">
+                        <button type="submit">Conectar</button>
+                    </div>
+                </form>  
+            </div>
+        </div>
+    </section>
+    <script>
+        // Seus dados JSON originais
+        let data = {
+            "id": "1",
+            "name": "hat_xi",
+            "frames": [
+                {
+                    "frame_name": "frame_00",
+                    "frame": ""
+                }
+                // Você pode adicionar mais frames aqui se necessário
+            ],
+            "wake_up_time": "",
+            "sleep_time": ""
+        };
+        // 1. Obter referências aos elementos
+        let isProtectedCheckbox = document.getElementById('isProtected');
+        let passwordGroup = document.getElementById('passwordGroup');
+        isProtectedCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                passwordGroup.classList.remove('oculto');
+                // Torna o campo de senha obrigatório quando visível
+                document.getElementById('senha').setAttribute('required', true); 
             } else {
-                 // Nota: Tentar iniciar server.begin() novamente pode não funcionar bem.
-                 // Para ligar novamente, você pode precisar de uma função de reset ou uma verificação
+                passwordGroup.classList.add('oculto');
+                document.getElementById('senha').removeAttribute('required');
             }
+        });
+        // Função para preencher o formulário com os dados JSON
+        window.addEventListener('load', async () => {
+            document.getElementById('name').value = data.name;
+            document.getElementById('wake_up_time').value = data.wake_up_time;
+            document.getElementById('sleep_time').value = data.sleep_time;
+
+            let txtarea = document.querySelector('.frame-section');
+            data.frames.forEach((frameData, index) => {
+
+                txtarea.innerHTML = `
+                    <div class="form-group">
+                        <label for="frameName_${index}">Nome do Frame ${index + 1}:</label>
+                        <input type="text" id="frameName_${index}" value="${frameData.frame_name}">
+                    </div>
+                    <div class="form-group">
+                        <label for="frameData_${index}">Dados do Frame ${index + 1} (Hex):</label>
+                        <textarea id="frameData_${index}" readonly>${frameData.frame}</textarea>
+                    </div>
+                `;
+            });
+        })
+
+        // Função para lidar com o envio do formulário (simulado)
+        document.getElementById('animationForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            // Coleta os dados do formulário para um novo objeto JSON
+            let updatedData = {
+                name: document.getElementById('name').value,
+                wake_up_time: document.getElementById('wake_up_time').value,
+                sleep_time: document.getElementById('sleep_time').value,
+                frames: []
+            };
+
+            // Coleta dados dos frames
+            document.querySelectorAll('.frame-section').forEach((frameDiv, index) => {
+                let frameName = document.getElementById(`frameName_${index}`).value;
+                let frameValue = document.getElementById(`frameData_${index}`).value; // Dados brutos (readonly)
+
+                updatedData.frames.push({
+                    frame_name: frameName,
+                    frame: frameValue
+                });
+            });
+
+            console.log("Dados a serem enviados/salvos:", updatedData);
+            alert("Formulário enviado com sucesso! Verifique o console para o objeto JSON gerado.");
+        });
+
+        const animationDialog = document.getElementById('animationDialog');
+        const acultar_form = document.querySelector('.acultar_form');
+        const closeDialogButton = document.getElementById('closeDialogButton');
+        // 1. Mostrar o diálogo quando o botão "Abrir" for clicado
+        acultar_form.addEventListener('click', () => {
+            // showModal() abre o diálogo e adiciona um backdrop (fundo escuro)
+            animationDialog.showModal(); 
+        });
+
+        // 2. Fechar o diálogo quando o botão "Fechar" for clicado
+        closeDialogButton.addEventListener('click', () => {
+            animationDialog.close();
+        });
+
+        function setupSwitchListeners() {
+            const switches = document.querySelectorAll('.switch');
+            switches.forEach(switchElement => {
+                switchElement.addEventListener('change', function() {
+                    const deviceId = this.id.split('-')[1]; // Ex: 'switch-wifi' -> 'wifi'
+                    const newState = this.checked ? 'on' : 'off';
+                    
+                    // Redireciona para a rota /toggle com os parâmetros de dispositivo e estado
+                    window.location.href = `/toggle?device=${deviceId}&state=${newState}`;
+                });
+            });
+        }
+
+        // Chame a função quando o documento estiver pronto
+        document.addEventListener('DOMContentLoaded', setupSwitchListeners);
+        const currentHourElement = document.getElementById('current_hour');
+            const currentDateElement = document.getElementById('current_date');
+
+            async function updateDateTime() {
+                try {
+                    // Chama o novo endpoint que retorna a data e hora em formato JSON
+                    const response = await fetch('/datetime');
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        // Atualiza os elementos HTML com os dados JSON
+                        currentHourElement.textContent = data.time;
+                        currentDateElement.textContent = data.date;
+                    } else {
+                        currentHourElement.textContent = "--:--:--";
+                        currentDateElement.textContent = "--/--/----";
+                        console.error("Erro ao buscar data/hora. Status:", response.status);
+                    }
+                } catch (error) {
+                    console.error("Erro de rede ao buscar data/hora:", error);
+                    currentHourElement.textContent = "--:--:--";
+                    currentDateElement.textContent = "--/--/----";
+                }
+            }
+            // Chama a função a cada 1 segundo (1000ms)
+            setInterval(updateDateTime, 1000); 
+        updateDateTime(); // Chama imediatamente na carga
+    </script>
+    </body>
+    </html>
+)rawliteral";
+
+// Função de Processamento para substituir o marcador %STATE% no HTML
+String processor(const String& var){
+    Serial.print("Placeholder requisitado: "); Serial.println(var);
+
+    if(var == "WIFI_STATE"){
+        // O HTML usa "checked" para ligar o switch
+        return getSwitchState(wifiState);
     }
-    // Redireciona o cliente para a página inicial para atualizar a UI
-    server.sendHeader("Location", "/", true);
-    server.send(302, "text/plain", "");
+    if(var == "BLUETOOTH_STATE"){
+        return getSwitchState(bluetoothState);
+    }
+    if(var == "WEBSERVER_STATE"){
+        return getSwitchState(webserverState);
+    }
+    if(var == "SSID_VALUE"){
+        // Retorna o SSID atual ou uma mensagem se desconectado
+        return (WiFi.status() == WL_CONNECTED) ? WiFi.SSID() : "Desconectado";
+    }
+    if(var == "IP_VALUE"){
+        // Retorna o IP local
+        return (WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString() : "0.0.0.0";
+    }
+    if(var == "MAC_VALUE"){
+        // Retorna o endereço MAC
+        return WiFi.macAddress();
+    }
+    if(var == "WAKEON_DISPLAY"){
+        // Retorna o valor da função getHoursWakeon()
+        return timeManager.getHoursWakeon();
+    }
+    if(var == "SLEEP_DISPLAY"){
+        // Retorna o valor da função getHoursSleep()
+        return timeManager.getHoursSleep();
+    }
+
+    // Para qualquer outro placeholder não mapeado
+    return String();
 }
 
-// Função de Configuração (Implementação com argumentos)
-void startServer(bool initialWifiState) {
-  // Inicializa as variáveis de estado com os valores passados
-  wifiState = initialWifiState;
-  
-  // 2. Configuração de Rotas do Servidor Web
-  server.on("/", sendHtml);
-  server.on("/toggle", handleToggle);
-  // 3. Inicia o Servidor
-  server.begin();
-  webserverState = true;
-  Serial.println("HTTP server started");
-  Serial.println("-------------------");
+// Função que lida com a alternância de estado de qualquer switch
+void handleToggle(AsyncWebServerRequest *request) {
+    String param = "state";
+    String value = "toggle";
+
+    if (request->hasParam(param)) {
+        value = request->getParam(param)->value();
+    }
+
+    Serial.print("Comando de alternância recebido: ");
+    Serial.println(value);
+
+    // Verifica qual switch deve ser alternado
+    if (value == "wifi") {
+        wifiState = !wifiState;
+        Serial.printf("WiFi alternado para: %s\n", wifiState ? "LIGADO" : "DESLIGADO");
+        // Coloque aqui a lógica para iniciar/parar o WiFi se necessário
+        WiFi.disconnect(true); // Desconecta da rede
+        Serial.println("Desligando WiFi...");
+        WiFi.mode(WIFI_OFF); // Desliga a interface Wi-Fi
+        Serial.println("WiFi desligado.");
+    } 
+    else if (value == "bluetooth") {
+        bluetoothState = !bluetoothState;
+        Serial.printf("Bluetooth alternado para: %s\n", bluetoothState ? "LIGADO" : "DESLIGADO");
+        // Coloque aqui a lógica para iniciar/parar o Bluetooth se necessário
+    }
+    else if (value == "webserver") {
+        webserverState = !webserverState;
+        Serial.printf("Servidor Web alternado para: %s\n", webserverState ? "LIGADO" : "DESLIGADO");
+        // Lembre-se: Desligar o servidor web exige reinício ou parada forçada, cuidado!
+    }
+
+    // Após alternar o estado, redireciona o usuário de volta para a página inicial
+    request->redirect("/");
 }
 
-void run(void) {
-  server.handleClient();
-  delay(2);
+void handleDateTime(AsyncWebServerRequest *request) {
+    // Obter o tempo atual do sistema (assumindo que o NTP foi configurado)
+    time_t now = time(nullptr); 
+    struct tm timeinfo;
+    localtime_r(&now, &timeinfo);
+    
+    // Alocação de memória para strings formatadas
+    char dateString[11]; // DD/MM/YYYY + '\0'
+    char hourString[9]; // HH:MM:SS + '\0'
+
+    // Formata a data e hora
+    strftime(dateString, sizeof(dateString), "%d/%m/%Y", &timeinfo);
+    strftime(hourString, sizeof(hourString), "%H:%M:%S", &timeinfo);
+    
+    // Constrói a resposta JSON para o JavaScript
+    String responseJson = "{\"date\":\"";
+    responseJson += dateString;
+    responseJson += "\",\"time\":\"";
+    responseJson += hourString;
+    responseJson += "\"}";
+
+    // Envia a resposta JSON. É ESSENCIAL usar send() aqui.
+    request->send(200, "application/json", responseJson);
+}
+
+void startServer() {
+    // --- 2. Configuração de Rotas (Endpoints) ---
+    
+    // Rota raiz (/) - Serve a página HTML
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    // O processor() será chamado para substituir %STATE%
+        request->send_P(200, "text/html", index_html, processor);
+    });
+    
+    // Rota de alternância (Toggle) para todos os switches
+    server.on("/toggle", HTTP_GET, handleToggle);
+    
+    // NOVO: Rota para Data e Hora Dinâmicas (JSON)
+    server.on("/datetime", HTTP_GET, handleDateTime); // <--- Adicione esta linha
+
+    // --- 3. Inicia o Servidor ---
+    server.begin();
+    Serial.println("Servidor HTTP Async Iniciado!");
+}
+
+void run(){
+  // Com o ESPAsyncWebServer, o loop() fica livre para outras tarefas
+  // Nenhuma chamada de 'server.handleClient()' é necessária!
+  // Podemos, por exemplo, ler um sensor aqui a cada 1 segundo:
+  // delay(1000);
 }
 
 #endif

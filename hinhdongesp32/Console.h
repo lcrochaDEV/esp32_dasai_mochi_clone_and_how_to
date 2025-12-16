@@ -3,15 +3,18 @@
 
 #include <Arduino.h>
 
-class Console {
+#include "WifiConnect.h"
+
+class Console: public WifiConnect{
   public:
-    Console(String consoleText = "");
+    Console(const char* consoleText = nullptr);
     //MENSAGEM DE TODO O PROGRAMA
     void helloWord(String consoleText = "Hello Mochi");
     void menssageViewMsg(String consoleText = "Hello Mochi");
     void consoleView();
+
   private:
-    String consoleTextView;
+    const char* consoleText;
     void commands_envio(String consoleText);
 };
  

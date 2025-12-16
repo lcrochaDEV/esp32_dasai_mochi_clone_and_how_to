@@ -5,3 +5,7 @@ BTConnect::BTConnect(){}
 
 void BTConnect::connections_bt(const char* bt_name) {
 }
+
+void BTConnect::requestJsonData(){
+
+}

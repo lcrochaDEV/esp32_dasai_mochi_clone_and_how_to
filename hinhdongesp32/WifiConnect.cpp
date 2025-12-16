@@ -80,7 +80,4 @@ void WifiConnect::searchRedes(){
       }
     }
   }
-
-
-
 }
