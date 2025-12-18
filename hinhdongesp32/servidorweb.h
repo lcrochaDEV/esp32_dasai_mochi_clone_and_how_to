@@ -34,9 +34,8 @@ const char index_html[] PROGMEM = R"rawliteral(
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    <link rel="stylesheet" href="stayle.css">
     <title>Mochi D.I.Y</title>
-    <style>
+<style>
         :root {
             --color-font: #ffffff;
             --color-boder: rgba(148, 141, 135, 0.167);
@@ -59,9 +58,21 @@ const char index_html[] PROGMEM = R"rawliteral(
             opacity: .9;
             color: var(--color-font);
         }
+        nav .icon {
+            color: #cf0844;
+            font-weight: bold;
+            font-size: 30px;
+            position: relative;
+            top: 15px;
+        }
         .conteiner_nav {
             display: flex;
             justify-content: space-between;
+        }
+        .conteiner_top {
+            display: flex;
+            justify-content: space-between;
+            background-color:  rgba(26, 13, 46, 0.411);
         }
         .menu {
             display: flex;
@@ -124,7 +135,6 @@ const char index_html[] PROGMEM = R"rawliteral(
             border-color: var(--accent-light);
             box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
         }
-
         header h3, p {
             margin: 10px 15px;
         }
@@ -237,42 +247,40 @@ const char index_html[] PROGMEM = R"rawliteral(
             /* Se quiser a animação lenta (4s) APENAS ao sumir: */
             transition-duration: 4s; 
         }
+        /*DIALOG*/
         /*FORMULÁRIO*/
         dialog#animationDialog {
             /* Remove a borda e o fundo padrão do dialog para usar o estilo da div interna */
+            margin: auto;       /* Faz o navegador centralizar automaticamente */
             border: none;
+            background: transparent;
             padding: 0;
-            background-color: transparent;
-            color: white;
+            outline: none;
+            overflow: visible;
         }
         #closeDialogButton {
-            width: 20px;
+            width: 30px;
+            height: 30px;
             border: none;
-            border-radius: 50%;
-            font-weight: bold;
-            position: relative;
-            left: 95%;
-            top: -10px;
             background-color: #cf0844;
+            font-weight: bold;
+            color: #ffffff;
+            font-size: 15px;
+            border-radius: 20px;
+            position: relative;
+            left: 465px;
         }
         /* Aplica seus estilos existentes à div interna */
         .form-container {
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            max-width: 600px;
             background-color: var(--bg-header);
-            border-radius: 5px;
-            border: 1px solid;
-            border-color: var(--accent-light);
-            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
-            margin: auto; /* Ajuda a centralizar o conteúdo dentro do dialog se necessário */
-            position: fixed; /* Fixa na viewport */
-            top: 50%;        /* Move o topo para o meio da tela */
-            left: 50%;       /* Move a esquerda para o meio da tela */
-            transform: translate(-50%, -50%); /* Ajusta 50% da largura/altura do próprio elemento de volta */
-            z-index: 1000;   /* Garante que fique acima de outros conteúdos */
-            margin: 0;     
+            border: 1px solid var(--accent-light);
+            border-radius: 8px;
+            padding: 30px;
+            width: 90vw;
+            max-width: 500px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            position: relative; /* Base para o botão de fechar */
+            color: white; 
         }
         .overlay {
             position: fixed;
@@ -311,7 +319,7 @@ const char index_html[] PROGMEM = R"rawliteral(
             border-radius: 4px;
             cursor: pointer;
             position: relative;
-            float: right;
+            left: 415px;
         }
         button:hover {
             background-color: #0056b3;
@@ -340,7 +348,9 @@ const char index_html[] PROGMEM = R"rawliteral(
     </nav>
     <header>
         <div class="conteiner">
-            <h3>Redes</h3>
+            <div class="conteiner_top">
+                <h3>Redes</h3>
+            </div>
             <div class="conteiner_sw">
                 <p><span>WIFI:</span></p>
                 <div class="switch__container">
@@ -361,7 +371,9 @@ const char index_html[] PROGMEM = R"rawliteral(
             </div>
         </div>
         <div class="conteiner">
-            <h3>Configurações</h3>
+            <div class="conteiner_top">
+                <h3>Configurações</h3>
+            </div>
             <div class="conteiner_sw">
                 <p><span>Servidor Web:</span></p>
                 <div class="switch__container">
@@ -375,44 +387,21 @@ const char index_html[] PROGMEM = R"rawliteral(
             <p><span>Sleep: </span>%SLEEP_DISPLAY%</p>
         </div>
         <!--<div class="conteiner"></div>-->
-        <dialog id="animationDialog">
-            <div class="form-container">
-                <button id="closeDialogButton" aria-label="Fechar formulário">X</button>
-                <h2>Configuração de Animação</h2>
-                <form id="animationForm">       
-                    <div class="form-group">
-                        <label for="name">Nome:</label>
-                        <input type="text" id="name">
-                    </div>
-                    <div class="form-group">
-                        <label for="wake_up_time">Hora de Acordar:</label>
-                        <input type="time" id="wake_up_time">
-                    </div>
-            
-                    <div class="form-group">
-                        <label for="sleep_time">Hora de Dormir:</label>
-                        <input type="time" id="sleep_time">
-                    </div>
-                    <!-- Seção para os frames -->
-                    <div id="framesContainer">
-                        <!-- Frames serão inseridos aqui via JS -->
-                        <div class="frame-section"></div>
-                    </div>
-            
-                    <button type="submit" class="form_btn">Cadastrar</button>
-                </form>
-            </div>
-        </dialog>
     </header>
     <section>
         <div class="conteiner">
-            <h3>Network Scan</h3>
+            <div class="conteiner_top">
+                <h3>Network Scan</h3>
+                <!-- HTML !-->
+                <button class="scan" role="button"><span class="material-symbols-outlined">scan</span></button>
+            </div>
             <div class="conteiner_scan">
                 <form id="networkForm">
                     <div class="form-group">
                         <input type="checkbox" id="isProtected">
-                        <label for="nomeRede">SSID: <span>NOME DA REDE</span></label>
-                        <label for="potencia">Potência: <span id="potenciaValor">50%</span></label>
+                        <label for="nomeRede">SSID: <span>%SCAN_SSID%</span></label>
+                        <label for="potencia">Potência: <span id="potenciaValor">%RSSI%</span></label>
+                        <label for="encryption ">Encryption: <span id="potenciaValor">%ENCRYPTION%</span></label>
                     </div>
                     <!-- Campo de Senha (Oculto por padrão) -->
                     <div id="passwordGroup" class="oculto">
@@ -424,6 +413,34 @@ const char index_html[] PROGMEM = R"rawliteral(
             </div>
         </div>
     </section>
+    <dialog id="animationDialog">
+        <div class="form-container">
+            <button id="closeDialogButton" aria-label="Fechar formulário">X</button>
+            <h2>Configuração de Animação</h2>
+            <form id="animationForm">       
+                <div class="form-group">
+                    <label for="name">Nome:</label>
+                    <input type="text" id="name">
+                </div>
+                <div class="form-group">
+                    <label for="wake_up_time">Hora de Acordar:</label>
+                    <input type="time" id="wake_up_time">
+                </div>
+        
+                <div class="form-group">
+                    <label for="sleep_time">Hora de Dormir:</label>
+                    <input type="time" id="sleep_time">
+                </div>
+                <!-- Seção para os frames -->
+                <div id="framesContainer">
+                    <!-- Frames serão inseridos aqui via JS -->
+                    <div class="frame-section"></div>
+                </div>
+        
+                <button type="submit" class="form_btn">Cadastrar</button>
+            </form>
+        </div>
+    </dialog>
     <script>
         // Seus dados JSON originais
         let data = {
@@ -515,7 +532,8 @@ const char index_html[] PROGMEM = R"rawliteral(
             animationDialog.close();
         });
 
-        function setupSwitchListeners() {
+        // Chame a função quando o documento estiver pronto
+        document.addEventListener('DOMContentLoaded', () => {
             const switches = document.querySelectorAll('.switch');
             switches.forEach(switchElement => {
                 switchElement.addEventListener('change', function() {
@@ -526,37 +544,36 @@ const char index_html[] PROGMEM = R"rawliteral(
                     window.location.href = `/toggle?device=${deviceId}&state=${newState}`;
                 });
             });
-        }
+        });
 
-        // Chame a função quando o documento estiver pronto
-        document.addEventListener('DOMContentLoaded', setupSwitchListeners);
+
         const currentHourElement = document.getElementById('current_hour');
-            const currentDateElement = document.getElementById('current_date');
+        const currentDateElement = document.getElementById('current_date');
 
-            async function updateDateTime() {
-                try {
-                    // Chama o novo endpoint que retorna a data e hora em formato JSON
-                    const response = await fetch('/datetime');
+        async function updateDateTime() {
+            try {
+                // Chama o novo endpoint que retorna a data e hora em formato JSON
+                const response = await fetch('/datetime');
+                
+                if (response.ok) {
+                    const data = await response.json();
                     
-                    if (response.ok) {
-                        const data = await response.json();
-                        
-                        // Atualiza os elementos HTML com os dados JSON
-                        currentHourElement.textContent = data.time;
-                        currentDateElement.textContent = data.date;
-                    } else {
-                        currentHourElement.textContent = "--:--:--";
-                        currentDateElement.textContent = "--/--/----";
-                        console.error("Erro ao buscar data/hora. Status:", response.status);
-                    }
-                } catch (error) {
-                    console.error("Erro de rede ao buscar data/hora:", error);
+                    // Atualiza os elementos HTML com os dados JSON
+                    currentHourElement.textContent = data.time;
+                    currentDateElement.textContent = data.date;
+                } else {
                     currentHourElement.textContent = "--:--:--";
                     currentDateElement.textContent = "--/--/----";
+                    console.error("Erro ao buscar data/hora. Status:", response.status);
                 }
+            } catch (error) {
+                console.error("Erro de rede ao buscar data/hora:", error);
+                currentHourElement.textContent = "";
+                currentDateElement.innerHTML = '<span class="material-symbols-outlined icon">wifi_off</span>';
             }
-            // Chama a função a cada 1 segundo (1000ms)
-            setInterval(updateDateTime, 1000); 
+        }
+        // Chama a função a cada 1 segundo (1000ms)
+        setInterval(updateDateTime, 1000); 
         updateDateTime(); // Chama imediatamente na carga
     </script>
     </body>

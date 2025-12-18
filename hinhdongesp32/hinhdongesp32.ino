@@ -13,14 +13,17 @@ Animations animations_exec;
 
 #include "WirelessConnection.h"
 #include "servidorweb.h"
+#include "sdData.h"
 
 const char* SSID = "PERIGO";
 const char* PASSWORD = "LIBER@RWIFI";
 
 WirelessConnection wirelessConnection = WirelessConnection(SSID, PASSWORD);
 
+
 void setup() {
   Serial.begin(115200);
+  sdRun();
   animations_exec.helloWordMochi(); //HELLO WORD
   wirelessConnection.connections_Wifi(); // CONNECT WIFI
   wirelessConnection.searchRedes(); //SCAN WIFI REDE
