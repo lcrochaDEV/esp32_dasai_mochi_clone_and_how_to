@@ -12,19 +12,30 @@ let data = {
     "wake_up_time": "",
     "sleep_time": ""
 };
-// 1. Obter referências aos elementos
-let isProtectedCheckbox = document.getElementById('isProtected');
-let passwordGroup = document.getElementById('passwordGroup');
-isProtectedCheckbox.addEventListener('change', function() {
-    if (this.checked) {
-        passwordGroup.classList.remove('oculto');
-        // Torna o campo de senha obrigatório quando visível
-        document.getElementById('senha').setAttribute('required', true); 
-    } else {
-        passwordGroup.classList.add('oculto');
-        document.getElementById('senha').removeAttribute('required');
+
+let area = [
+    {
+        "ssid": "PERIGO",
+        "rssi": -44,
+        "enc": "Protegida"
+    },
+    {
+        "ssid": "EGBBS2.4",
+        "rssi": -66,
+        "enc": "Protegida"
+    },
+    {
+        "ssid": "WLINKS GUIMARAES",
+        "rssi": -83,
+        "enc": "Protegida"
+    },
+    {
+        "ssid": "WLINKS - Área 51",
+        "rssi": -92,
+        "enc": "Protegida"
     }
-});
+]
+
 // Função para preencher o formulário com os dados JSON
 window.addEventListener('load', async () => {
     document.getElementById('name').value = data.name;
@@ -92,7 +103,7 @@ closeDialogButton.addEventListener('click', () => {
 document.addEventListener('DOMContentLoaded', () => {
     const switches = document.querySelectorAll('.switch');
     switches.forEach(switchElement => {
-        switchElement.addEventListener('change', function() {
+        switchElement.addEventListener('change', () => {
             const deviceId = this.id.split('-')[1]; // Ex: 'switch-wifi' -> 'wifi'
             const newState = this.checked ? 'on' : 'off';
             
@@ -103,6 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+//DATE HOUR
 const currentHourElement = document.getElementById('current_hour');
 const currentDateElement = document.getElementById('current_date');
 
@@ -129,5 +141,69 @@ async function updateDateTime() {
     }
 }
 // Chama a função a cada 1 segundo (1000ms)
-setInterval(updateDateTime, 1000); 
+//setInterval(updateDateTime, 1000); 
 updateDateTime(); // Chama imediatamente na carga
+
+
+//SCAN SCRIPT
+const scan = document.querySelector(".scan");
+const item = document.querySelector('.conteiner_scan');
+scan.addEventListener("click", async () => {
+    const conteiner = document.getElementById("lista_redes");
+    item.innerHTML = "";
+    conteiner.innerHTML = "<p style='padding:15px;'>Buscando redes...</p>"
+    try {
+    //const conexao = await fetch('/scan')
+    //    const redes = await conexao.json();        
+        conteiner.innerHTML = ""; // Limpa o "Buscando..."
+        area.forEach(rede => {
+            item.innerHTML += `
+                <form id="isProtected">
+                    <div class="form-group">
+                        <input type="checkbox">
+                        <label for="nomeRede">SSID: <span>${rede.ssid}</span></label>
+                        <label for="potencia">Potência: <span>${rede.rssi} dBm</span></label>
+                        <label for="encryption">Encryption: <span>${rede.enc}</span></label>
+                    </div>
+                    <div id="passGroupOculto" class="oculto">
+                        <input type="password" name="password" data-ssid="${rede.ssid}" placeholder="Digite a senha" required>
+                        <button type="submit">Conectar</button>
+                    </div>
+                </form>
+                <hr style="border: 0.1px solid var(--color-boder); margin: 10px 0;">
+            `;
+        });
+    }catch{
+        conteiner.innerHTML = "<p style='padding:15px;'>Não Encontrado!</p>";
+    }
+})
+// Função que abre/fecha a div da senha
+item.addEventListener('change', (event) => {
+    // 1. O checkbox que disparou o evento
+    const checkbox = event.target;
+
+    // 2. Encontra o "passGroup" que está LOGO APÓS a div pai do checkbox
+    // Usamos nextElementSibling para pular espaços vazios do HTML
+    let passDiv = checkbox.parentElement.nextElementSibling;
+
+    // 3. Verificamos se o passDiv existe e se é o elemento correto
+    if (passDiv && (passDiv.id === "passGroupOculto")) {
+        if (checkbox.checked) {
+            passDiv.classList.remove("oculto");
+            passDiv.querySelector('input').focus();
+        } else {
+            passDiv.classList.add("oculto");
+        }
+    }
+});
+
+item.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    let ssid = event.target['password'].dataset.ssid
+    let passw = event.target.elements['password'].value;
+    // Envia os dados para o ESP32
+    const response = await fetch(`/connect?ssid=${ssid}&pass=${passw}`);
+    if (response.ok) {
+        alert("Comando enviado! Aguarde a conexão.");
+    }
+});

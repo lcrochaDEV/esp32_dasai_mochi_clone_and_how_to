@@ -1,9 +1,11 @@
 #ifndef SERVIDORWEB_H
 #define SERVIDORWEB_H
 
+#include "SD.h"
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#include <ArduinoJson.h> // Instale a biblioteca ArduinoJson
 
 #include "Hours_Time.h"
 Hours_Time timeManager;
@@ -26,595 +28,26 @@ String getSwitchState(bool state) {
     return state ? "checked" : ""; 
 }
 
-// Função que retorna a página HTML completa com o estado atual do LED
-const char index_html[] PROGMEM = R"rawliteral(
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-    <title>Mochi D.I.Y</title>
-<style>
-        :root {
-            --color-font: #ffffff;
-            --color-boder: rgba(148, 141, 135, 0.167);
-            --bg-header: rgba(148, 141, 135, 0.167);
-            --accent-light: #a78bfa;
-        }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: content-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        html {
-            background: rgba(26, 13, 46, 0.95);
-        }
-        nav {
-            width: 100%;
-            background-color: var(--bg-header);
-            backdrop-filter: blur(10px);
-            opacity: .9;
-            color: var(--color-font);
-        }
-        nav .icon {
-            color: #cf0844;
-            font-weight: bold;
-            font-size: 30px;
-            position: relative;
-            top: 15px;
-        }
-        .conteiner_nav {
-            display: flex;
-            justify-content: space-between;
-        }
-        .conteiner_top {
-            display: flex;
-            justify-content: space-between;
-            background-color:  rgba(26, 13, 46, 0.411);
-        }
-        .menu {
-            display: flex;
-            justify-items: start;
-        }
-        .menu ul {
-            margin: 20px 50px;
-            list-style-type: none;
-            display: flex;
-        }
-        .menu a {
-            color: #ffffff;
-            text-decoration: none;
-            padding: 20px;
-        }
-        .menu ul li a:hover {
-            background-color: rgba(17, 17, 17, 0.295);
-            border-bottom: 1px solid;
-            border-color: var(--accent-light);
-
-        }
-        .conteiner_right {
-            display: flex;
-            justify-content: space-between;           
-        }
-        .data_hora {
-            display: flex;
-            flex-direction: column;
-            text-align: center;
-            border: 0;
-            padding: 0;
-        }
-        .data_hora p {
-            border: 0;
-            margin-top: 7px;
-            margin-bottom: -2px;
-        }
-        .mochi, .dasai {
-            width: 100px;
-            margin: 5px;
-        }
-        .jukebox {
-            width: 55px;
-            position: relative;
-            top: 7px;
-            transform: rotate(5deg);
-        }
-        header, section {
-            display: flex;
-            justify-content: start;
-            color: var(--color-font);
-            margin-top: 10px;
-            margin-left: 5px;
-        }
-        .conteiner{
-            background-color: var(--bg-header);
-            border-radius: 5px;
-            margin-right: 12px;
-            border: 1px solid;
-            border-color: var(--accent-light);
-            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
-        }
-        header h3, p {
-            margin: 10px 15px;
-        }
-        .conteiner span {
-            font-weight: bold;
-        }
-        .conteiner_sw {
-            display: flex;
-            justify-content: space-between;
-            margin: 0 10px 10px 0;
-        }
-        .switch {
-            margin-left: -9999px;
-            visibility: hidden;
-            position: relative;
-        }
-        .switch + label {
-            display: block;
-            position: relative;
-            cursor: pointer;
-            outline: none;
-            user-select: none;
-        }
-        .switch--shadow + label {
-            padding: 2px;
-            width: 35px;
-            height: 20px;
-            background-color: #dddddd;
-            border-radius: 30px;
-        }
-        .switch--shadow + label:before,
-        .switch--shadow + label:after {
-            display: block;
-            position: absolute;
-            top: 1px;
-            left: 1px;
-            bottom: 1px;
-            content: '';
-        }
-        .switch--shadow + label:before {
-            right: 1px;
-            background-color: #f1f1f1;
-            border-radius: 30px;
-            transition: all 0.4s;
-        }
-        .switch--shadow + label:after {
-            width: 30px;
-            background-color: #fff;
-            border-radius: 100%;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-            transition: all 0.4s;
-        }
-        .switch--shadow:checked + label:before {
-            background-color: #8ce196;
-        }
-        .switch--shadow:checked + label:after {
-            transform: translateX(8px);
-        }
-        header h3, section h3 {
-            padding-bottom: 3px;
-            border-bottom: 1px solid;
-            border-color: var(--accent-light);  
-        }
-        section h3, p {
-            margin: 10px 15px;
-        }
-        /*NETWORK SCAN*/
-        .conteiner_scan {
-            text-decoration: none;
-            margin: 10px 15px;
-            color: #fff;
-            font-weight: bold;
-        }
-        .conteiner_scan span {
-            font-weight: 400;
-            padding: 10px;
-        }
-
-        #passwordGroup input[type="text"], input[type="password"], input[type="range"] {
-            box-sizing: border-box;
-            margin-top: 10px;
-            height: 25px;
-        }
-
-        #passwordGroup button {
-            height: 25px;
-            background-color: #cf0844;
-            border-radius: 5px;
-            padding: 0 2px;
-            border: none;
-            color: #ffffff;
-        }
-        #passwordGroup {
-            /* Combinando transições para simplificar */
-            transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out, margin 0.5s ease-in-out;
-            overflow: hidden; /* ESSENCIAL para que max-height: 0 funcione */
-            
-            /* Estado Visível Padrão */
-            max-height: 200px; /* Suficiente para o seu conteúdo */
-            opacity: 1;
-            margin: 15px 0;
-        }
-
-        .oculto {
-            /* Estado Oculto */
-            max-height: 0 !important; /* Força a altura zero */
-            opacity: 0 !important;   /* Força a opacidade zero */
-            margin: 0 !important;    /* Força a margem zero */
-            
-            /* Se quiser a animação lenta (4s) APENAS ao sumir: */
-            transition-duration: 4s; 
-        }
-        /*DIALOG*/
-        /*FORMULÁRIO*/
-        dialog#animationDialog {
-            /* Remove a borda e o fundo padrão do dialog para usar o estilo da div interna */
-            margin: auto;       /* Faz o navegador centralizar automaticamente */
-            border: none;
-            background: transparent;
-            padding: 0;
-            outline: none;
-            overflow: visible;
-        }
-        #closeDialogButton {
-            width: 30px;
-            height: 30px;
-            border: none;
-            background-color: #cf0844;
-            font-weight: bold;
-            color: #ffffff;
-            font-size: 15px;
-            border-radius: 20px;
-            position: relative;
-            left: 465px;
-        }
-        /* Aplica seus estilos existentes à div interna */
-        .form-container {
-            background-color: var(--bg-header);
-            border: 1px solid var(--accent-light);
-            border-radius: 8px;
-            padding: 30px;
-            width: 90vw;
-            max-width: 500px;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
-            position: relative; /* Base para o botão de fechar */
-            color: white; 
-        }
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-            display: none; /* Controlado via JS junto com o formulário */
-        }
-
-        .form-container label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input[type="text"], input[type="time"], textarea {
-            width: 100%;
-            padding: 10px 8px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        textarea {
-            height: 200px;
-            font-family: monospace;
-            overflow-y: scroll;
-            margin-bottom: 10px;
-        }
-        .form_btn {
-            padding: 10px 15px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            position: relative;
-            left: 415px;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-    </style>
-</head>
-<body>
-    <nav>
-        <div class="conteiner_nav">
-            <div class="menu">
-                <img class="mochi" src="https://dasai.com.au/cdn/shop/files/logo_2.png?v=1746165958&width=4370" alt="mochi">
-                <ul>
-                    <li class=""><a href="#">HOME</a></li>
-                    <li class="acultar_form"><a href="#">CADASTRO</a></li>
-                </ul>
-            </div>
-            <div class="conteiner_right">
-                <img class="jukebox" src="https://dasai.com.au/cdn/shop/files/gacha.png?v=1698886761&width=1842">
-                <div class="data_hora">
-                    <p id="current_hour">--:--:--</p>
-                    <p id="current_date">--/--/----</p>
-                </div>
-                <img class="dasai" src="https://tenereteam.s3.us-west-1.amazonaws.com/dasai-logo-updated.png?v=1762691630" alt="dasai">
-            </div>
-        </div>
-    </nav>
-    <header>
-        <div class="conteiner">
-            <div class="conteiner_top">
-                <h3>Redes</h3>
-            </div>
-            <div class="conteiner_sw">
-                <p><span>WIFI:</span></p>
-                <div class="switch__container">
-                    <input id="switch-wifi" class="switch switch--shadow" type="checkbox" %WIFI_STATE%/>
-                    <label for="switch-wifi"></label>
-                </div>
-            </div>
-            <p><span>SSID: </span>%SSID_VALUE%</p>
-            <p><span>IP Address: </span>%IP_VALUE%</p>
-            <p><span>MAC Address: </span>%MAC_VALUE%</p>
-            <div class="conteiner_sw">
-                <p><span>Bluetooth:</span></p>
-                <div class="switch__container">
-                    <!-- Este agora é exclusivo para Bluetooth -->
-                    <input id="switch-bluetooth" class="switch switch--shadow" type="checkbox" %BLUETOOTH_STATE%/>
-                    <label for="switch-bluetooth"></label>
-                </div>
-            </div>
-        </div>
-        <div class="conteiner">
-            <div class="conteiner_top">
-                <h3>Configurações</h3>
-            </div>
-            <div class="conteiner_sw">
-                <p><span>Servidor Web:</span></p>
-                <div class="switch__container">
-                    <!-- Este agora é exclusivo para Servidor Web -->
-                    <input id="switch-webserver" class="switch switch--shadow" type="checkbox" %WEBSERVER_STATE%/>
-                    <label for="switch-webserver"></label>
-                </div>
-            </div>
-            <h3>Wakeon Mode</h3>
-            <p><span>Wakon: </span>%WAKEON_DISPLAY%</p>
-            <p><span>Sleep: </span>%SLEEP_DISPLAY%</p>
-        </div>
-        <!--<div class="conteiner"></div>-->
-    </header>
-    <section>
-        <div class="conteiner">
-            <div class="conteiner_top">
-                <h3>Network Scan</h3>
-                <!-- HTML !-->
-                <button class="scan" role="button"><span class="material-symbols-outlined">scan</span></button>
-            </div>
-            <div class="conteiner_scan">
-                <form id="networkForm">
-                    <div class="form-group">
-                        <input type="checkbox" id="isProtected">
-                        <label for="nomeRede">SSID: <span>%SCAN_SSID%</span></label>
-                        <label for="potencia">Potência: <span id="potenciaValor">%RSSI%</span></label>
-                        <label for="encryption ">Encryption: <span id="potenciaValor">%ENCRYPTION%</span></label>
-                    </div>
-                    <!-- Campo de Senha (Oculto por padrão) -->
-                    <div id="passwordGroup" class="oculto">
-                        <!--<label for="senha">Password: </label>-->
-                        <input type="password" id="senha" placeholder="Password" autocomplete="new-password">
-                        <button type="submit">Conectar</button>
-                    </div>
-                </form>  
-            </div>
-        </div>
-    </section>
-    <dialog id="animationDialog">
-        <div class="form-container">
-            <button id="closeDialogButton" aria-label="Fechar formulário">X</button>
-            <h2>Configuração de Animação</h2>
-            <form id="animationForm">       
-                <div class="form-group">
-                    <label for="name">Nome:</label>
-                    <input type="text" id="name">
-                </div>
-                <div class="form-group">
-                    <label for="wake_up_time">Hora de Acordar:</label>
-                    <input type="time" id="wake_up_time">
-                </div>
-        
-                <div class="form-group">
-                    <label for="sleep_time">Hora de Dormir:</label>
-                    <input type="time" id="sleep_time">
-                </div>
-                <!-- Seção para os frames -->
-                <div id="framesContainer">
-                    <!-- Frames serão inseridos aqui via JS -->
-                    <div class="frame-section"></div>
-                </div>
-        
-                <button type="submit" class="form_btn">Cadastrar</button>
-            </form>
-        </div>
-    </dialog>
-    <script>
-        // Seus dados JSON originais
-        let data = {
-            "id": "1",
-            "name": "hat_xi",
-            "frames": [
-                {
-                    "frame_name": "frame_00",
-                    "frame": ""
-                }
-                // Você pode adicionar mais frames aqui se necessário
-            ],
-            "wake_up_time": "",
-            "sleep_time": ""
-        };
-        // 1. Obter referências aos elementos
-        let isProtectedCheckbox = document.getElementById('isProtected');
-        let passwordGroup = document.getElementById('passwordGroup');
-        isProtectedCheckbox.addEventListener('change', function() {
-            if (this.checked) {
-                passwordGroup.classList.remove('oculto');
-                // Torna o campo de senha obrigatório quando visível
-                document.getElementById('senha').setAttribute('required', true); 
-            } else {
-                passwordGroup.classList.add('oculto');
-                document.getElementById('senha').removeAttribute('required');
-            }
-        });
-        // Função para preencher o formulário com os dados JSON
-        window.addEventListener('load', async () => {
-            document.getElementById('name').value = data.name;
-            document.getElementById('wake_up_time').value = data.wake_up_time;
-            document.getElementById('sleep_time').value = data.sleep_time;
-
-            let txtarea = document.querySelector('.frame-section');
-            data.frames.forEach((frameData, index) => {
-
-                txtarea.innerHTML = `
-                    <div class="form-group">
-                        <label for="frameName_${index}">Nome do Frame ${index + 1}:</label>
-                        <input type="text" id="frameName_${index}" value="${frameData.frame_name}">
-                    </div>
-                    <div class="form-group">
-                        <label for="frameData_${index}">Dados do Frame ${index + 1} (Hex):</label>
-                        <textarea id="frameData_${index}" readonly>${frameData.frame}</textarea>
-                    </div>
-                `;
-            });
-        })
-
-        // Função para lidar com o envio do formulário (simulado)
-        document.getElementById('animationForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            // Coleta os dados do formulário para um novo objeto JSON
-            let updatedData = {
-                name: document.getElementById('name').value,
-                wake_up_time: document.getElementById('wake_up_time').value,
-                sleep_time: document.getElementById('sleep_time').value,
-                frames: []
-            };
-
-            // Coleta dados dos frames
-            document.querySelectorAll('.frame-section').forEach((frameDiv, index) => {
-                let frameName = document.getElementById(`frameName_${index}`).value;
-                let frameValue = document.getElementById(`frameData_${index}`).value; // Dados brutos (readonly)
-
-                updatedData.frames.push({
-                    frame_name: frameName,
-                    frame: frameValue
-                });
-            });
-
-            console.log("Dados a serem enviados/salvos:", updatedData);
-            alert("Formulário enviado com sucesso! Verifique o console para o objeto JSON gerado.");
-        });
-
-        const animationDialog = document.getElementById('animationDialog');
-        const acultar_form = document.querySelector('.acultar_form');
-        const closeDialogButton = document.getElementById('closeDialogButton');
-        // 1. Mostrar o diálogo quando o botão "Abrir" for clicado
-        acultar_form.addEventListener('click', () => {
-            // showModal() abre o diálogo e adiciona um backdrop (fundo escuro)
-            animationDialog.showModal(); 
-        });
-
-        // 2. Fechar o diálogo quando o botão "Fechar" for clicado
-        closeDialogButton.addEventListener('click', () => {
-            animationDialog.close();
-        });
-
-        // Chame a função quando o documento estiver pronto
-        document.addEventListener('DOMContentLoaded', () => {
-            const switches = document.querySelectorAll('.switch');
-            switches.forEach(switchElement => {
-                switchElement.addEventListener('change', function() {
-                    const deviceId = this.id.split('-')[1]; // Ex: 'switch-wifi' -> 'wifi'
-                    const newState = this.checked ? 'on' : 'off';
-                    
-                    // Redireciona para a rota /toggle com os parâmetros de dispositivo e estado
-                    window.location.href = `/toggle?device=${deviceId}&state=${newState}`;
-                });
-            });
-        });
-
-
-        const currentHourElement = document.getElementById('current_hour');
-        const currentDateElement = document.getElementById('current_date');
-
-        async function updateDateTime() {
-            try {
-                // Chama o novo endpoint que retorna a data e hora em formato JSON
-                const response = await fetch('/datetime');
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    // Atualiza os elementos HTML com os dados JSON
-                    currentHourElement.textContent = data.time;
-                    currentDateElement.textContent = data.date;
-                } else {
-                    currentHourElement.textContent = "--:--:--";
-                    currentDateElement.textContent = "--/--/----";
-                    console.error("Erro ao buscar data/hora. Status:", response.status);
-                }
-            } catch (error) {
-                console.error("Erro de rede ao buscar data/hora:", error);
-                currentHourElement.textContent = "";
-                currentDateElement.innerHTML = '<span class="material-symbols-outlined icon">wifi_off</span>';
-            }
-        }
-        // Chama a função a cada 1 segundo (1000ms)
-        setInterval(updateDateTime, 1000); 
-        updateDateTime(); // Chama imediatamente na carga
-    </script>
-    </body>
-    </html>
-)rawliteral";
-
 // Função de Processamento para substituir o marcador %STATE% no HTML
 String processor(const String& var){
     Serial.print("Placeholder requisitado: "); Serial.println(var);
 
-    if(var == "WIFI_STATE"){
-        // O HTML usa "checked" para ligar o switch
-        return getSwitchState(wifiState);
-    }
-    if(var == "BLUETOOTH_STATE"){
-        return getSwitchState(bluetoothState);
-    }
-    if(var == "WEBSERVER_STATE"){
-        return getSwitchState(webserverState);
-    }
-    if(var == "SSID_VALUE"){
-        // Retorna o SSID atual ou uma mensagem se desconectado
-        return (WiFi.status() == WL_CONNECTED) ? WiFi.SSID() : "Desconectado";
-    }
-    if(var == "IP_VALUE"){
-        // Retorna o IP local
-        return (WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString() : "0.0.0.0";
-    }
-    if(var == "MAC_VALUE"){
-        // Retorna o endereço MAC
-        return WiFi.macAddress();
-    }
-    if(var == "WAKEON_DISPLAY"){
-        // Retorna o valor da função getHoursWakeon()
-        return timeManager.getHoursWakeon();
-    }
-    if(var == "SLEEP_DISPLAY"){
-        // Retorna o valor da função getHoursSleep()
-        return timeManager.getHoursSleep();
-    }
+    if(var == "WIFI_STATE") return getSwitchState(wifiState); // O HTML usa "checked" para ligar o switch
+    
+    if(var == "BLUETOOTH_STATE") return getSwitchState(bluetoothState);
 
+    if(var == "WEBSERVER_STATE") return getSwitchState(webserverState);
+
+    if(var == "SSID_VALUE") return (WiFi.status() == WL_CONNECTED) ? WiFi.SSID() : "Desconectado"; // Retorna o SSID atual ou uma mensagem se desconectado
+    
+    if(var == "IP_VALUE") return (WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString() : "0.0.0.0"; // Retorna o IP local
+    
+    if(var == "MAC_VALUE") return WiFi.macAddress(); // Retorna o endereço MAC
+    
+    if(var == "WAKEON_DISPLAY") return timeManager.getHoursWakeon(); // Retorna o valor da função getHoursWakeon()
+    
+    if(var == "SLEEP_DISPLAY") return timeManager.getHoursSleep(); // Retorna o valor da função getHoursSleep()
+    
     // Para qualquer outro placeholder não mapeado
     return String();
 }
@@ -682,21 +115,78 @@ void handleDateTime(AsyncWebServerRequest *request) {
 }
 
 void startServer() {
-    // --- 2. Configuração de Rotas (Endpoints) ---
-    
-    // Rota raiz (/) - Serve a página HTML
+    // Configuração de Rotas (Endpoints)
+    server.serveStatic("/index/", SD, "/index/");
+    // Rota raiz (/) - Lendo do SD
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    // O processor() será chamado para substituir %STATE%
-        request->send_P(200, "text/html", index_html, processor);
+        // Verifica se o arquivo existe no SD
+        if (SD.exists("/index/index.html")) {
+            // Enviamos o arquivo do SD passando o processor para templates
+            request->send(SD, "/index/index.html", "text/html", false, processor);
+        } else {
+            request->send(404, "text/plain", "Arquivo nao encontrado no SD");
+        }
     });
-    
     // Rota de alternância (Toggle) para todos os switches
     server.on("/toggle", HTTP_GET, handleToggle);
     
     // NOVO: Rota para Data e Hora Dinâmicas (JSON)
     server.on("/datetime", HTTP_GET, handleDateTime); // <--- Adicione esta linha
 
-    // --- 3. Inicia o Servidor ---
+    // Rota que o JavaScript vai chamar para obter a lista de redes
+    server.on("/scan", HTTP_GET, [](AsyncWebServerRequest *request){
+        int n = WiFi.scanNetworks();
+        JsonDocument doc; // Para ArduinoJson 7
+        JsonArray root = doc.to<JsonArray>();
+
+        for (int i = 0; i < n; ++i) {
+            JsonObject item = root.add<JsonObject>();
+            item["ssid"] = WiFi.SSID(i);
+            item["rssi"] = WiFi.RSSI(i);
+            item["enc"] = (WiFi.encryptionType(i) == WIFI_AUTH_OPEN) ? "Aberta" : "Protegida";
+        }
+
+        String response;
+        serializeJson(doc, response);
+        request->send(200, "application/json", response);
+        WiFi.scanDelete();
+    });
+    server.on("/connect", HTTP_GET, [](AsyncWebServerRequest *request){
+        if (request->hasParam("ssid") && request->hasParam("pass")) {
+            String newSsid = request->getParam("ssid")->value();
+            String newPass = request->getParam("pass")->value();
+            
+            // 1. Guardar credenciais atuais antes de tentar a nova
+            String oldSsid = WiFi.SSID();
+            String oldPass = WiFi.psk();
+
+            Serial.printf("Tentando nova rede: %s\n", newSsid.c_str());
+            
+            // 2. Tentar conexão com a nova rede
+            WiFi.begin(newSsid.c_str(), newPass.c_str());
+            
+            // 3. Aguardar resultado (timeout de 10 segundos)
+            int tentativas = 0;
+            while (WiFi.status() != WL_CONNECTED && tentativas < 20) {
+                delay(500);
+                Serial.print(".");
+                tentativas++;
+            }
+
+            if (WiFi.status() == WL_CONNECTED) {
+                Serial.println("\nConectado à nova rede!");
+                request->send(200, "application/json", "{\"status\":\"success\", \"ip\":\"" + WiFi.localIP().toString() + "\"}");
+            } else {
+                Serial.println("\nFalha na nova rede. Reabilitando rede anterior...");
+                // 4. Reabilitar a rede antiga
+                WiFi.begin(oldSsid.c_str(), oldPass.c_str());
+                request->send(401, "application/json", "{\"status\":\"failed\", \"msg\":\"Senha incorreta ou sinal fraco. Reconectando à rede anterior.\"}");
+            }
+        } else {
+            request->send(400, "text/plain", "Dados invalidos");
+        }
+    });
+    // Inicia o Servidor 
     server.begin();
     Serial.println("Servidor HTTP Async Iniciado!");
 }
