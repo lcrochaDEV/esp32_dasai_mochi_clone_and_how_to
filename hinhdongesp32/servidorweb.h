@@ -7,6 +7,8 @@
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h> // Instale a biblioteca ArduinoJson
 
+#include "WirelessConnection.h"
+WirelessConnection wirelessConnections;
 #include "Hours_Time.h"
 Hours_Time timeManager;
 
@@ -135,22 +137,37 @@ void startServer() {
 
     // Rota que o JavaScript vai chamar para obter a lista de redes
     server.on("/scan", HTTP_GET, [](AsyncWebServerRequest *request){
-        int n = WiFi.scanNetworks();
-        JsonDocument doc; // Para ArduinoJson 7
+        int n = WiFi.scanComplete(); // Verifica se um scan já foi feito
+        if(n == -2) {
+            WiFi.scanNetworks(true); // Inicia scan assíncrono se não houver um pronto
+            request->send(202, "application/json", "{\"status\":\"Scanning...\"}");
+            return;
+        }
+
+        JsonDocument doc; 
         JsonArray root = doc.to<JsonArray>();
 
         for (int i = 0; i < n; ++i) {
             JsonObject item = root.add<JsonObject>();
             item["ssid"] = WiFi.SSID(i);
             item["rssi"] = WiFi.RSSI(i);
-            item["enc"] = (WiFi.encryptionType(i) == WIFI_AUTH_OPEN) ? "Aberta" : "Protegida";
+            item["channel"] = WiFi.channel(i);
+
+            // Identificação detalhada da segurança
+            uint8_t type = WiFi.encryptionType(i);
+            String encDesc = wirelessConnections.getEncryptionName(type);
+            
+            item["enc"] = encDesc;
+            // Adiciona um booleano para facilitar o filtro no Frontend
+            item["isWPA3"] = (type == WIFI_AUTH_WPA3_PSK || type == WIFI_AUTH_WPA2_WPA3_PSK);
         }
 
         String response;
         serializeJson(doc, response);
         request->send(200, "application/json", response);
-        WiFi.scanDelete();
+        WiFi.scanDelete(); 
     });
+
     server.on("/connect", HTTP_GET, [](AsyncWebServerRequest *request){
         if (request->hasParam("ssid") && request->hasParam("pass")) {
             String newSsid = request->getParam("ssid")->value();

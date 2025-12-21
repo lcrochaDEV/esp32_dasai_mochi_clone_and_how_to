@@ -1,3 +1,4 @@
+#include "WString.h"
 #if defined(ESP8266)
   #include <ESP8266WiFi.h>
 #elif defined(ESP32)
@@ -57,7 +58,7 @@ void WifiConnect::wifiOff(){
     Serial.println("WiFi desligado.");
 }
 
-void WifiConnect::searchRedes(){
+void WifiConnect::searchRedes() {
   int n = WiFi.scanNetworks(); // Escaneia redes
   Serial.print(n);
   Serial.println(" redes encontradas");
@@ -66,18 +67,31 @@ void WifiConnect::searchRedes(){
     Serial.println("Nenhuma rede encontrada.");
   } else {
     for (int i = 0; i < n; ++i) {
-      // Exibe SSID, RSSI e tipo de segurança
-      Serial.print(i + 1);
-      Serial.print(": ");
-      Serial.print(WiFi.SSID(i));
-      Serial.print(" (");
-      Serial.print(WiFi.RSSI(i)); // Sinal mais próximo de 0 é mais forte
-      Serial.print("dBm)");
-      if (WiFi.encryptionType(i) == WIFI_AUTH_OPEN) {
-        Serial.println(" - Aberta");
-      } else {
-        Serial.println(" - Protegida");
-      }
+      Serial.printf("%d: %s (%d dBm) - Segurança: ", i + 1, WiFi.SSID(i).c_str(), WiFi.RSSI(i));
+
+      // Pegamos o tipo de criptografia
+      uint8_t encryptionType = WiFi.encryptionType(i);
+      Serial.println(getEncryptionName(encryptionType));
     }
   }
+  // Limpa o resultado do scan da memória para evitar vazamentos
+  WiFi.scanDelete();
+}
+// Função auxiliar para traduzir o tipo de criptografia
+String WifiConnect::getEncryptionName(uint8_t encryptionType) {
+    #if defined(ESP32)
+        switch (encryptionType) {
+            case WIFI_AUTH_OPEN:            return "Aberta";
+            case WIFI_AUTH_WEP:             return "WEP";
+            case WIFI_AUTH_WPA_PSK:         return "WPA-PSK";
+            case WIFI_AUTH_WPA2_PSK:        return "WPA2-PSK";
+            case WIFI_AUTH_WPA_WPA2_PSK:    return "WPA/WPA2-PSK";
+            case WIFI_AUTH_WPA2_ENTERPRISE: return "WPA2-Enterprise";
+            case WIFI_AUTH_WPA3_PSK:        return "WPA3-SAE";
+            case WIFI_AUTH_WPA2_WPA3_PSK:   return "WPA2/WPA3 Transition";
+            default:                        return "Protegida";
+        }
+    #elif defined(ESP8266)
+        return (encryptionType == ENC_TYPE_NONE) ? "Aberta" : "Protegida (WPA/WPA2)";
+    #endif
 }

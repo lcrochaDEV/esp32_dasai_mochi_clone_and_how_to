@@ -15,6 +15,9 @@ class WifiConnect {
     void diconnectRede();
     void wifiOff();
     void searchRedes();
+    String getEncryptionName(uint8_t encryptionType);
+   
+  private:
 
   protected:
     const char* ssid; 
