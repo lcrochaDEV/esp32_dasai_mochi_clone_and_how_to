@@ -138,12 +138,16 @@ void startServer() {
     // Rota que o JavaScript vai chamar para obter a lista de redes
     server.on("/scan", HTTP_GET, [](AsyncWebServerRequest *request){
         int n = WiFi.scanComplete(); // Verifica se um scan já foi feito
-        if(n == -2) {
-            WiFi.scanNetworks(true); // Inicia scan assíncrono se não houver um pronto
-            request->send(202, "application/json", "{\"status\":\"Scanning...\"}");
+        // Se o scan não foi iniciado (-2) ou está rodando (-1)
+        if(n < 0) {
+            if(n == -2) {
+                // Limpa scans anteriores e inicia um novo em background (true)
+                WiFi.scanNetworks(true); 
+            }
+            // Retorna 202 (Accepted) para dizer ao JS: "Recebi, mas volte mais tarde"
+            request->send(202, "application/json", "{\"status\":\"scanning\"}");
             return;
         }
-
         JsonDocument doc; 
         JsonArray root = doc.to<JsonArray>();
 
@@ -151,7 +155,6 @@ void startServer() {
             JsonObject item = root.add<JsonObject>();
             item["ssid"] = WiFi.SSID(i);
             item["rssi"] = WiFi.RSSI(i);
-            item["channel"] = WiFi.channel(i);
 
             // Identificação detalhada da segurança
             uint8_t type = WiFi.encryptionType(i);
@@ -165,7 +168,8 @@ void startServer() {
         String response;
         serializeJson(doc, response);
         request->send(200, "application/json", response);
-        WiFi.scanDelete(); 
+        // Deleta os resultados da memória para o próximo scan ser limpo
+        WiFi.scanDelete();
     });
 
     server.on("/connect", HTTP_GET, [](AsyncWebServerRequest *request){

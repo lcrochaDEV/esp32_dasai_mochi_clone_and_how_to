@@ -141,42 +141,73 @@ async function updateDateTime() {
     }
 }
 // Chama a função a cada 1 segundo (1000ms)
-//setInterval(updateDateTime, 1000); 
+setInterval(updateDateTime, 1000); 
 updateDateTime(); // Chama imediatamente na carga
 
 
 //SCAN SCRIPT
+// 1. Defina a função delay no topo do seu script
+const delay = ms => new Promise(res => setTimeout(res, ms));
+
 const scan = document.querySelector(".scan");
 const item = document.querySelector('.conteiner_scan');
+const conteiner = document.getElementById("lista_redes");
+
 scan.addEventListener("click", async () => {
-    const conteiner = document.getElementById("lista_redes");
     item.innerHTML = "";
-    conteiner.innerHTML = "<p style='padding:15px;'>Buscando redes...</p>"
+    conteiner.innerHTML = "<p style='padding:15px;'>Buscando redes...</p>";
+    
+    // Desabilitar o botão para evitar múltiplos cliques simultâneos
+    scan.disabled = true;
+
     try {
-    //const conexao = await fetch('/scan')
-    //    const redes = await conexao.json();        
-        conteiner.innerHTML = ""; // Limpa o "Buscando..."
-        area.forEach(rede => {
-            item.innerHTML += `
-                <form id="isProtected">
-                    <div class="form-group">
-                        <input type="checkbox">
-                        <label for="nomeRede">SSID: <span>${rede.ssid}</span></label>
-                        <label for="potencia">Potência: <span>${rede.rssi} dBm</span></label>
-                        <label for="encryption">Encryption: <span>${rede.enc}</span></label>
-                    </div>
-                    <div id="passGroupOculto" class="oculto">
-                        <input type="password" name="password" data-ssid="${rede.ssid}" placeholder="Digite a senha" required>
-                        <button type="submit">Conectar</button>
-                    </div>
-                </form>
-                <hr style="border: 0.1px solid var(--color-boder); margin: 10px 0;">
-            `;
-        });
-    }catch{
-        conteiner.innerHTML = "<p style='padding:15px;'>Não Encontrado!</p>";
+        let escaneando = true;
+        let tentativas = 0;
+
+        while (escaneando && tentativas < 10) { // Limite de segurança de 10 tentativas (20s)
+            const conexao = await fetch('/scan');
+            
+            if (conexao.status === 200) {
+                const redes = await conexao.json();        
+                conteiner.innerHTML = ""; 
+                
+                if (redes.length === 0) {
+                    item.innerHTML = "<p style='padding:15px;'>Nenhuma rede encontrada.</p>";
+                } else {
+                    redes.forEach(rede => {
+                        // Importante: use classes em vez de IDs repetidos
+                        item.innerHTML += `
+                            <form id="isProtected">
+                                <div class="form-group">
+                                    <input type="checkbox">
+                                    <label for="nomeRede">SSID: <span>${rede.ssid}</span></label>
+                                    <label for="potencia">Potência: <span>${rede.rssi} dBm</span></label>
+                                    <label for="encryption">Encryption: <span>${rede.enc}</span></label>
+                                </div>
+                                <div id="passGroupOculto" class="oculto">
+                                    <input type="password" name="password" data-ssid="${rede.ssid}" placeholder="Digite a senha" required>
+                                    <button type="submit">Conectar</button>
+                                </div>
+                            </form>
+                            <hr style="border: 0.1px solid var(--color-boder); margin: 10px 0;">
+                        `;
+                    });
+                }
+                escaneando = false; 
+
+            } else if (conexao.status === 202) {
+                tentativas++;
+                await delay(2000); // Espera 2 segundos antes da próxima volta do loop
+            } else {
+                throw new Error("Erro no servidor");
+            }
+        }
+    } catch (error) {
+        conteiner.innerHTML = "<p style='padding:15px;'>Erro na conexão!</p>";
+    } finally {
+        scan.disabled = false; // Reabilita o botão
     }
-})
+});
 // Função que abre/fecha a div da senha
 item.addEventListener('change', (event) => {
     // 1. O checkbox que disparou o evento

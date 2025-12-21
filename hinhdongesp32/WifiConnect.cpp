@@ -92,6 +92,13 @@ String WifiConnect::getEncryptionName(uint8_t encryptionType) {
             default:                        return "Protegida";
         }
     #elif defined(ESP8266)
-        return (encryptionType == ENC_TYPE_NONE) ? "Aberta" : "Protegida (WPA/WPA2)";
+      switch (encryptionType) {
+          case ENC_TYPE_NONE: return "Aberta";
+          case ENC_TYPE_WEP:  return "WEP";
+          case ENC_TYPE_TKIP: return "WPA (TKIP)";
+          case ENC_TYPE_CCMP: return "WPA2 (AES)";
+          case ENC_TYPE_AUTO: return "WPA/WPA2 Auto";
+          default:            return "Protegida";
+      }
     #endif
 }
