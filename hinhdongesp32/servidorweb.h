@@ -8,9 +8,9 @@
 #include <ArduinoJson.h> // Instale a biblioteca ArduinoJson
 
 #include "WirelessConnection.h"
-WirelessConnection wirelessConnections;
+extern WirelessConnection wirelessConnection;
 #include "Hours_Time.h"
-Hours_Time timeManager;
+extern Hours_Time hours_Time_exec;
 
 // Cria o objeto Servidor na porta 80 (porta HTTP padrão)
 AsyncWebServer server(80);
@@ -24,6 +24,10 @@ String getSwitchState(bool state);
 String processor(const String& var);
 void handleToggle(AsyncWebServerRequest *request);
 void handleDateTime(AsyncWebServerRequest *request);
+
+//Nova conexão
+String pendinSsid = "";
+String pendingPass = "";
 
 String getSwitchState(bool state) {
     // Retorna "checked" se o estado for true (ligado), ou uma string vazia se for false (desligado)
@@ -46,10 +50,10 @@ String processor(const String& var){
     
     if(var == "MAC_VALUE") return WiFi.macAddress(); // Retorna o endereço MAC
     
-    if(var == "WAKEON_DISPLAY") return timeManager.getHoursWakeon(); // Retorna o valor da função getHoursWakeon()
+    if(var == "WAKEON_DISPLAY") return String(hours_Time_exec.getHoursWakeon()); // Retorna o valor da função getHoursWakeon()
     
-    if(var == "SLEEP_DISPLAY") return timeManager.getHoursSleep(); // Retorna o valor da função getHoursSleep()
-    
+    if(var == "SLEEP_DISPLAY") return String(hours_Time_exec.getHoursSleep()); // Retorna o valor da função getHoursSleep()
+
     // Para qualquer outro placeholder não mapeado
     return String();
 }
@@ -158,7 +162,7 @@ void startServer() {
 
             // Identificação detalhada da segurança
             uint8_t type = WiFi.encryptionType(i);
-            String encDesc = wirelessConnections.getEncryptionName(type);
+            String encDesc = wirelessConnection.getEncryptionName(type);
             
             item["enc"] = encDesc;
             // Adiciona um booleano para facilitar o filtro no Frontend
@@ -174,38 +178,17 @@ void startServer() {
 
     server.on("/connect", HTTP_GET, [](AsyncWebServerRequest *request){
         if (request->hasParam("ssid") && request->hasParam("pass")) {
-            String newSsid = request->getParam("ssid")->value();
-            String newPass = request->getParam("pass")->value();
+            String pendingSsid = request->getParam("ssid")->value();
+            String pendingPass = request->getParam("pass")->value();
             
-            // 1. Guardar credenciais atuais antes de tentar a nova
-            String oldSsid = WiFi.SSID();
-            String oldPass = WiFi.psk();
+            WiFi.disconnect();
+            WiFi.begin(pendingSsid.c_str(), pendingPass.c_str());
 
-            Serial.printf("Tentando nova rede: %s\n", newSsid.c_str());
-            
-            // 2. Tentar conexão com a nova rede
-            WiFi.begin(newSsid.c_str(), newPass.c_str());
-            
-            // 3. Aguardar resultado (timeout de 10 segundos)
-            int tentativas = 0;
-            while (WiFi.status() != WL_CONNECTED && tentativas < 20) {
-                delay(500);
-                Serial.print(".");
-                tentativas++;
-            }
-
-            if (WiFi.status() == WL_CONNECTED) {
-                Serial.println("\nConectado à nova rede!");
-                request->send(200, "application/json", "{\"status\":\"success\", \"ip\":\"" + WiFi.localIP().toString() + "\"}");
-            } else {
-                Serial.println("\nFalha na nova rede. Reabilitando rede anterior...");
-                // 4. Reabilitar a rede antiga
-                WiFi.begin(oldSsid.c_str(), oldPass.c_str());
-                request->send(401, "application/json", "{\"status\":\"failed\", \"msg\":\"Senha incorreta ou sinal fraco. Reconectando à rede anterior.\"}");
-            }
+            request->send(200, "application/json", "{\"status\":\"attempting\", \"msg\":\"Tentando conectar...\"}");
         } else {
-            request->send(400, "text/plain", "Dados invalidos");
+            request->send(400, "text/plain", "Faltam parametros");
         }
+
     });
     // Inicia o Servidor 
     server.begin();

@@ -15,6 +15,15 @@ Hours_Time::Hours_Time(const char* hours_sleep, const char* hours_wakeon, const 
   this->animationRef = animationPtr;
 }
 
+const char* Hours_Time::getHoursWakeon() const {
+    return this->hours_wakeon;
+}
+
+const char* Hours_Time::getHoursSleep() const {
+    
+    return this->hours_sleep;
+}
+
 void Hours_Time::time_server(){
   // 2. Configuração do Serviço de Tempo (NTP)
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);

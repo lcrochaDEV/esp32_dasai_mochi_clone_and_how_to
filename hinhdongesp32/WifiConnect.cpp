@@ -6,32 +6,41 @@
 #endif
 
 #include "WirelessConnection.h"
-
 #include "WifiConnect.h"
 
-// Variável para contar as tentativas
-  int maxTentativas = 10;
-  int tentativaAtual = 0;
 
 WifiConnect::WifiConnect(const char* ssid, const char* password, Animations* animationPtr)
-  : ssid(ssid), password(password), wifiAnimationRef(animationPtr)
-{}
+  : ssid(ssid), password(password), wifiAnimationRef(animationPtr) {
+    // Variável para contar as tentativas
+    int maxTentativas;
+    int tentativaAtual;
+    bool ProcessoDeBackup;
+  }
 
 void WifiConnect::connections_Wifi(){
+  // 1. Força a desconexão total para limpar o rádio
+  WiFi.disconnect(true);
+  delay(100);
   //Serial.begin(115200);
   Serial.printf("Conectando a %s ", ssid);
+  // Configura para reconectar automaticamente se cair
+  WiFi.persistent(false);
+  WiFi.setAutoReconnect(true);
   WiFi.begin(ssid, password); // Inicia a conexão
 
-  while (WiFi.status() != WL_CONNECTED) { // Aguarda a conexão ser estabelecida
-    delay(500);
-    Serial.print(".");
-    if(tentativaAtual == maxTentativas){
-      wifiAnimationRef->not_wifi();
-      Serial.println("\nFalha ao conectar Wifi!");
-      Serial.print("\nConectando");
-    }
-    tentativaAtual++; // Incrementa o contador
+  // Reinicia contador para nova tentativa
+  tentativaAtual = 0;
+
+  while (WiFi.status() != WL_CONNECTED) {// Aguarda a conexão ser estabelecida
+  delay(500);
+  Serial.print(".");
+  if(tentativaAtual == maxTentativas){
+    wifiAnimationRef->not_wifi();
+    Serial.println("\nFalha ao conectar Wifi!");
+    return;
   }
+  tentativaAtual++; // Incrementa o contador
+}
 
   if(WiFi.status() == WL_CONNECTED){
     Serial.println("\nConectado ao Wi-Fi!");
@@ -41,8 +50,40 @@ void WifiConnect::connections_Wifi(){
     Serial.println(WiFi.macAddress()); // Anote este MAC para usar no codigo do Sender
     Serial.print("Canal Wi-Fi atual: ");
     Serial.println(WiFi.channel()); // Todos os senders devem usar este canal
-  }
+  }  
 }
+void WifiConnect::backupRede() {
+  // 1. Registra os eventos APENAS UMA VEZ (geralmente no setup ou init da classe)
+  WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) {
+      if (ProcessoDeBackup) {
+          Serial.println("\n[OK] Conectado via Backup!");
+          ProcessoDeBackup = false; 
+      } else {
+          Serial.println("\n[OK] Conectado à rede principal!");
+          backupSsid = WiFi.SSID();
+          backupPass = WiFi.psk();
+      }
+  }, ARDUINO_EVENT_WIFI_STA_GOT_IP);
+
+  WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) {
+      uint8_t motivo = info.wifi_sta_disconnected.reason;
+      
+      if (ProcessoDeBackup) return; // Evita loop infinito se o backup também falhar
+
+      // Motivos comuns de falha (Senha errada, AP não encontrado, etc)
+      if (motivo == 2 || motivo == 202 || motivo == 201) {
+          Serial.printf("\n[Falha] Motivo %d. Tentando backup...", motivo);
+          ProcessoDeBackup = true;
+          WiFi.disconnect(true, false); // Aborta a tentativa atual oficialmente
+          delay(10);
+          WiFi.setAutoReconnect(false); // 2. Opcional: Desativa o auto-reconnect temporariamente para não conflitar
+          // Usamos o begin para a rede de backup salva
+          WiFi.begin(backupSsid.c_str(), backupPass.c_str()); // 4. Reativa se desejar que o backup também tente se manter
+          WiFi.setAutoReconnect(true);
+      }
+  }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+}
+
 
 bool WifiConnect::connections_status(){
     return (WiFi.status() == WL_CONNECTED);

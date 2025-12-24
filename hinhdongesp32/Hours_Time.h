@@ -12,12 +12,8 @@ class Hours_Time {
     void time_server();
     void weke_on();
     void manual_turn_on();
-    const char* getHoursSleep() const {
-        return hours_sleep;
-    }
-    const char* getHoursWakeon() const {
-        return hours_wakeon;
-    }
+    const char* getHoursSleep() const;
+    const char* getHoursWakeon() const;
   private:
     // Configurações de Fuso Horário e NTP
     // Fuso horário de Brasília (GMT -3)

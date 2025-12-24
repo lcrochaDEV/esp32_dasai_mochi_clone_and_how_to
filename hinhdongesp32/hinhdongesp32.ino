@@ -25,6 +25,7 @@ void setup() {
   Serial.begin(115200);
   sdRun();
   animations_exec.helloWordMochi(); //HELLO WORD
+  wirelessConnection.backupRede();
   wirelessConnection.connections_Wifi(); // CONNECT WIFI
   wirelessConnection.searchRedes(); //SCAN WIFI REDE
   hours_Time_exec.time_server(); // TIME
