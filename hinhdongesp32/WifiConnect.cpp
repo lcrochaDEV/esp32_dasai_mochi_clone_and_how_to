@@ -32,44 +32,39 @@ void WifiConnect::connections_Wifi(){
   tentativaAtual = 0;
 
   while (WiFi.status() != WL_CONNECTED) {// Aguarda a conexão ser estabelecida
-  delay(500);
-  Serial.print(".");
-  if(tentativaAtual == maxTentativas){
-    wifiAnimationRef->not_wifi();
-    Serial.println("\nFalha ao conectar Wifi!");
-    return;
-  }
-  tentativaAtual++; // Incrementa o contador
-}
+    delay(500);
+    if (WiFi.status() == WL_CONNECTED) break;
+    Serial.print(".");
 
-  if(WiFi.status() == WL_CONNECTED){
-    Serial.println("\nConectado ao Wi-Fi!");
-    Serial.print("Endereco IP: ");
-    Serial.println(WiFi.localIP());
-    Serial.print("Endereco MAC do Gateway: ");
-    Serial.println(WiFi.macAddress()); // Anote este MAC para usar no codigo do Sender
-    Serial.print("Canal Wi-Fi atual: ");
-    Serial.println(WiFi.channel()); // Todos os senders devem usar este canal
-  }  
+    if(tentativaAtual == maxTentativas){
+      wifiAnimationRef->not_wifi();
+      Serial.println("\nFalha ao conectar Wifi!");
+      return;
+    }
+    tentativaAtual++; // Incrementa o contador
+  }
 }
 void WifiConnect::backupRede() {
   // 1. Registra os eventos APENAS UMA VEZ (geralmente no setup ou init da classe)
   WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) {
-      if (ProcessoDeBackup) {
-          Serial.println("\n[OK] Conectado via Backup!");
-          ProcessoDeBackup = false; 
-      } else {
-          Serial.println("\n[OK] Conectado à rede principal!");
-          backupSsid = WiFi.SSID();
-          backupPass = WiFi.psk();
-      }
+    // Reinicia contador para nova tentativa
+    if (ProcessoDeBackup) {
+        Serial.println("\n[OK] Conectado via Backup!");
+        ProcessoDeBackup = false; 
+    } else {
+        Serial.println("\n\n[OK] Conectado à rede principal!");
+        Serial.printf("SSID: %s", WiFi.SSID().c_str());
+        Serial.printf("Endereco IP: %s\n", WiFi.localIP().toString().c_str());
+        Serial.printf("Endereco MAC do Gateway %s\n", WiFi.macAddress().c_str()); // Anote este MAC para usar no codigo do Sender
+        Serial.printf("Canal Wi-Fi atual: %d\n\n", WiFi.channel());
+        backupSsid = WiFi.SSID();
+        backupPass = WiFi.psk();
+    }
   }, ARDUINO_EVENT_WIFI_STA_GOT_IP);
 
   WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) {
-      uint8_t motivo = info.wifi_sta_disconnected.reason;
-      
-      if (ProcessoDeBackup) return; // Evita loop infinito se o backup também falhar
-
+    uint8_t motivo = info.wifi_sta_disconnected.reason;
+    if (ProcessoDeBackup) return; // Evita loop infinito se o backup também falhar
       // Motivos comuns de falha (Senha errada, AP não encontrado, etc)
       if (motivo == 2 || motivo == 202 || motivo == 201) {
           Serial.printf("\n[Falha] Motivo %d. Tentando backup...", motivo);
@@ -80,6 +75,7 @@ void WifiConnect::backupRede() {
           // Usamos o begin para a rede de backup salva
           WiFi.begin(backupSsid.c_str(), backupPass.c_str()); // 4. Reativa se desejar que o backup também tente se manter
           WiFi.setAutoReconnect(true);
+        return;
       }
   }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 }
@@ -101,8 +97,7 @@ void WifiConnect::wifiOff(){
 
 void WifiConnect::searchRedes() {
   int n = WiFi.scanNetworks(); // Escaneia redes
-  Serial.print(n);
-  Serial.println(" redes encontradas");
+  Serial.printf("%d redes encontradas\n", n);
 
   if (n == 0) {
     Serial.println("Nenhuma rede encontrada.");

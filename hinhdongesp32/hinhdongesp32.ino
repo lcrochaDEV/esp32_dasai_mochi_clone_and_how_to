@@ -20,14 +20,18 @@ const char* PASSWORD = "LIBER@RWIFI";
 
 WirelessConnection wirelessConnection = WirelessConnection(SSID, PASSWORD);
 
+void startWifi() {
+  wirelessConnection.backupRede();
+  wirelessConnection.connections_Wifi(); // CONNECT WIFI
+  wirelessConnection.searchRedes(); //SCAN WIFI REDE
+}
+
 
 void setup() {
   Serial.begin(115200);
   sdRun();
   animations_exec.helloWordMochi(); //HELLO WORD
-  wirelessConnection.backupRede();
-  wirelessConnection.connections_Wifi(); // CONNECT WIFI
-  wirelessConnection.searchRedes(); //SCAN WIFI REDE
+  startWifi();
   hours_Time_exec.time_server(); // TIME
   startServer(); // START SERVIDOR WEB
 }
