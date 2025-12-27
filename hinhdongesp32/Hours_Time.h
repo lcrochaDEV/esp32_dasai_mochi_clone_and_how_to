@@ -12,6 +12,8 @@ class Hours_Time {
     void time_server();
     void weke_on();
     void manual_turn_on();
+    void monitorarConexao();
+    const char* losttime() const;
     const char* getHoursSleep() const;
     const char* getHoursWakeon() const;
   private:

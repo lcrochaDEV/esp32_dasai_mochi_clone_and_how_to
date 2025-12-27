@@ -2,26 +2,16 @@
 
 #include "Hours_Time.h"
 
-Hours_Time::Hours_Time(const char* hours_sleep, const char* hours_wakeon, const char* date, long  gmtOffset_sec, int daylightOffset_sec, const char* ntpServer, Animations* animationPtr){
-  // Configurações de Fuso Horário e NTP
-  // Fuso horário de Brasília (GMT -3)
-  this->hours_sleep = hours_sleep;
-  this->hours_wakeon = hours_wakeon;
-  this->date = date;
-  this->gmtOffset_sec = gmtOffset_sec;
-  this->daylightOffset_sec = daylightOffset_sec;  // 0 para não usar Horário de Verão
-  this->ntpServer = ntpServer;
-  // Salva a referência do objeto Animations
-  this->animationRef = animationPtr;
+Hours_Time::Hours_Time(const char* hours_sleep, const char* hours_wakeon, const char* date, long  gmtOffset_sec, int daylightOffset_sec, const char* ntpServer, Animations* animationPtr)
+    : hours_sleep(hours_sleep), hours_wakeon(hours_wakeon), date(date), gmtOffset_sec(gmtOffset_sec), daylightOffset_sec(daylightOffset_sec), ntpServer(ntpServer), animationRef(animationPtr) {
 }
 
 const char* Hours_Time::getHoursWakeon() const {
-    return this->hours_wakeon;
+    return hours_wakeon;
 }
 
 const char* Hours_Time::getHoursSleep() const {
-    
-    return this->hours_sleep;
+    return hours_sleep;
 }
 
 void Hours_Time::time_server(){
@@ -68,12 +58,12 @@ void Hours_Time::calendar() {
 void Hours_Time::weke_on(){
     // --- PARTE NOVA: CONTROLE DE TIMEOUT ---
     // Verifica se estamos no modo manual E se o tempo expirou
-    if (this->is_manual_mode) {
+    if (is_manual_mode) {
         // millis() retorna o tempo em ms desde o boot
-        if (millis() - this->manual_on_timestamp >= this->TIMEOUT_MS) {
+        if (millis() - manual_on_timestamp >= TIMEOUT_MS) {
             // AÇÃO: Timeout de 5 minutos atingido. Desliga o display
-            this->animationRef->control_oled_power(false);
-            this->is_manual_mode = false; // Sai do modo manual
+            animationRef->control_oled_power(false);
+            is_manual_mode = false; // Sai do modo manual
             Serial.println("Timeout de 5 minutos atingido. Desligando display.");
         }
         // Se ainda estiver no modo manual e o tempo não expirou, a função termina aqui
@@ -86,14 +76,14 @@ void Hours_Time::weke_on(){
         // 4. Formata a hora para a string (ex: de números para "18:00")
         strftime(currentTimeStr, sizeof(currentTimeStr), "%H:%M", &timeinfo);
         // 5. Compara a string formatada com a sua string de referência
-        if (strcmp(this->hours_sleep, currentTimeStr) == 0) {
+        if (strcmp(hours_sleep, currentTimeStr) == 0) {
             //Serial.println("Hora de Desligamento atingida!");
             // 🎯 AÇÃO: Desliga o display
-            this->animationRef->control_oled_power(false);
-        }else if (strcmp(this->hours_wakeon, currentTimeStr) == 0){
+            animationRef->control_oled_power(false);
+        }else if (strcmp(hours_wakeon, currentTimeStr) == 0){
             Serial.println("Hora de Ligar atingida!");
             // 🎯 AÇÃO: Liga o display
-            this->animationRef->control_oled_power(true);
+            animationRef->control_oled_power(true);
         } 
     }
 }
@@ -107,15 +97,24 @@ void Hours_Time::manual_turn_on() {
         // 4. Formata a hora para a string (ex: de números para "18:00")
         strftime(currentTimeStr, sizeof(currentTimeStr), "%H:%M", &timeinfo); 
         // 2. Verifica se estamos no período ATIVO (22:00 até 06:00)
-        if (strcmp(currentTimeStr, this->hours_sleep) >= 0 || strcmp(currentTimeStr, this->hours_wakeon) < 0) {
+        if (strcmp(currentTimeStr, hours_sleep) >= 0 || strcmp(currentTimeStr, hours_wakeon) < 0) {
             // AÇÃO: Liga o display
-            this->animationRef->control_oled_power(true);
+            animationRef->control_oled_power(true);
             
             // Define o modo manual e salva o tempo atual (millis())
-            this->is_manual_mode = true;
-            this->manual_on_timestamp = millis();
+            is_manual_mode = true;
+            manual_on_timestamp = millis();
             
             Serial.println("Display ligado manualmente (Modo Timeout).");
         }
+    }
+}
+
+const char* Hours_Time::losttime() const {
+    struct tm timeinfo;
+    static char timeString[50];
+    if (getLocalTime(&timeinfo)) {
+        strftime(timeString, sizeof(timeString), "%d/%m/%Y %H:%M:%S", &timeinfo);
+        return timeString;
     }
 }

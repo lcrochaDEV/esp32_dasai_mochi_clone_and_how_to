@@ -7,6 +7,7 @@
 
 #include "WirelessConnection.h"
 #include "WifiConnect.h"
+#include "Hours_Time.h"
 
 
 WifiConnect::WifiConnect(const char* ssid, const char* password, Animations* animationPtr)
@@ -44,6 +45,7 @@ void WifiConnect::connections_Wifi(){
     tentativaAtual++; // Incrementa o contador
   }
 }
+
 void WifiConnect::backupRede() {
   // 1. Registra os eventos APENAS UMA VEZ (geralmente no setup ou init da classe)
   WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) {
@@ -70,7 +72,6 @@ void WifiConnect::backupRede() {
           Serial.printf("\n[Falha] Motivo %d. Tentando backup...", motivo);
           ProcessoDeBackup = true;
           WiFi.disconnect(true, false); // Aborta a tentativa atual oficialmente
-          delay(10);
           WiFi.setAutoReconnect(false); // 2. Opcional: Desativa o auto-reconnect temporariamente para não conflitar
           // Usamos o begin para a rede de backup salva
           WiFi.begin(backupSsid.c_str(), backupPass.c_str()); // 4. Reativa se desejar que o backup também tente se manter
@@ -80,6 +81,20 @@ void WifiConnect::backupRede() {
   }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 }
 
+const char* WifiConnect::Uptime() const{
+  // 1. Registra os eventos APENAS UMA VEZ (geralmente no setup ou init da classe)
+  WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) {
+    uint8_t motivo = info.wifi_sta_disconnected.reason;
+    Serial.printf("✅ CONEXÃO RESTABELECIDA: %s\n", losttime());
+  }, ARDUINO_EVENT_WIFI_STA_GOT_IP);
+
+  WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) {
+    static bool executado = false;
+    if (executado) return; // Se já rodou, sai da função imediatamente
+    Serial.printf("⚠️ QUEDA DE CONEXÃO: %s\n", losttime());
+    executado = true; 
+  }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+}
 
 bool WifiConnect::connections_status(){
     return (WiFi.status() == WL_CONNECTED);

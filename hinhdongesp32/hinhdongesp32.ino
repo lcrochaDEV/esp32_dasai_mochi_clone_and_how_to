@@ -24,6 +24,7 @@ void startWifi() {
   wirelessConnection.backupRede();
   wirelessConnection.connections_Wifi(); // CONNECT WIFI
   wirelessConnection.searchRedes(); //SCAN WIFI REDE
+  wirelessConnection.connections_status();
 }
 
 
@@ -33,6 +34,7 @@ void setup() {
   animations_exec.helloWordMochi(); //HELLO WORD
   startWifi();
   hours_Time_exec.time_server(); // TIME
+  wirelessConnection.Uptime();
   startServer(); // START SERVIDOR WEB
 }
 void loop() {
@@ -40,4 +42,4 @@ void loop() {
   hours_Time_exec.weke_on();
   //CONSOLE
   console.consoleView();
-}
+} 

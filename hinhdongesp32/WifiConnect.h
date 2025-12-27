@@ -6,12 +6,14 @@
 
 #include <WiFi.h>
 #include "Animations.h"
+#include "Hours_Time.h"
 
-class WifiConnect {
+class WifiConnect: public  Hours_Time{
   public:
     WifiConnect(const char* ssid = nullptr, const char* password = nullptr, Animations* animationPtr = nullptr);
     void connections_Wifi();
     void backupRede();
+    const char*  Uptime() const;
     bool connections_status();
     void diconnectRede();
     void wifiOff();

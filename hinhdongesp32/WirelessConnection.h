@@ -10,7 +10,7 @@
 
 class WirelessConnection: public WifiConnect, public BTConnect{
   public:
-      WirelessConnection (const char* ssid = nullptr, const char* password = nullptr, Animations* animationPtr = nullptr);
+    WirelessConnection (const char* ssid = nullptr, const char* password = nullptr, Animations* animationPtr = nullptr);
 };
  
 #endif
