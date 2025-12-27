@@ -22,7 +22,6 @@ void Console::consoleView() {
     }
   }
 }
-
 void Console::commands_envio(String consoleText) {
   menssageViewMsg("Mochi> " + consoleText);
   if (consoleText == "SCAN"){

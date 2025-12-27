@@ -4,6 +4,7 @@ SDData::SDData(const char* filename)
   : filename(filename)
 {}
 
+// Starta o SD
 void SDData::sdbegin() {
   if(!SD.begin()){
     Serial.println("Falha ao montar o Cartão SD!");
@@ -27,6 +28,7 @@ void SDData::sdbegin() {
     }
 }
 
+// Cria diretórios no cartão SD
 bool SDData::createFolder(const char * path) {
     if (SD.exists(path)) {
         Serial.printf("A pasta '%s' já existe.\n", path);
@@ -39,15 +41,15 @@ bool SDData::createFolder(const char * path) {
         Serial.printf("Falha ao criar a pasta '%s'.\n", path);
         return false;
     }
-
     /*EXEMPLOS
       // SDData_exec.createFolder("/config"); // Criando uma pasta chamada 'config'
       // SDData_exec.createFolder("/assets/icons"); // Criando uma subpasta (mkdir cria todo o caminho se necessário)
     */
 }
 
+// Lista diretórios e arquivos no cartão SD
 void SDData::listDir(const char * dirname, uint8_t levels) {
-     Serial.println("\n\------Dados do cartão SD-------------");
+     Serial.println("\n------Dados do cartão SD-------------");
     Serial.printf("Listando diretório: %s\n", dirname);
 
     File root = SD.open(dirname);
@@ -69,7 +71,7 @@ void SDData::listDir(const char * dirname, uint8_t levels) {
                 listDir(file.path(), levels - 1);
             }
         } else {
-            Serial.printf(" FILE: %s SIZE %d\n", file.name(), file.size());
+            Serial.printf(" FILE: %s SIZE %d\n\n", file.name(), file.size());
         }
         file = root.openNextFile();
     }
@@ -78,61 +80,136 @@ void SDData::listDir(const char * dirname, uint8_t levels) {
       SDData_exec.listDir("/", 1); // O segundo parâmetro é a profundidade (0 = apenas a pasta atual, 1 = entra em uma subpasta)
     */
 }
-/*
 
 // --- GRAVAR (CREATE) ---
-void gravarJSON() {
-  File file = LittleFS.open(filename, "w");
+void SDData::gravarJSON(JsonDocument& doc) {
+  File file = SD.open(filename, "w");
   if (!file) return;
 
-  StaticJsonDocument<200> doc;
-  doc["usuario"] = "Admin";
-  doc["versao"] = 1.0;
-  doc["ativo"] = true;
-
   if (serializeJson(doc, file) == 0) {
+    Serial.println("Falha ao escrever JSON no SD");
+  } else {
     Serial.println("Falha ao gravar arquivo");
   }
   file.close();
+
+  /*EXEMPLO
+    JsonDocument doc; 
+    doc["ssid"] = "MinhaRede";
+    doc["senha"] = "12345678";
+    doc["ip_estatico"] = true;
+
+    meuSD.gravarJSON(doc); // A classe salva sem questionar os campos
+
+    JsonDocument doc;
+    doc["temp"] = 25.4;
+    doc["umid"] = 60;
+    doc["sensor_id"] = "DHT22_Externo";
+
+    meuSD.gravarJSON(doc); // O mesmo método agora salvou dados diferentes
+  */
 }
 
 // --- LER (READ) ---
-void readJSON() {
-  File file = LittleFS.open(filename, "r");
-  if (!file) return;
-
-  StaticJsonDocument<200> doc;
-  DeserializationError error = deserializeJson(doc, file);
-  
-  if (error) {
-    Serial.println("Erro na leitura");
-  } else {
-    const char* user = doc["usuario"];
-    Serial.println(user);
+bool SDData::readJSON(JsonDocument& doc) {
+  File file = SD.open(filename, "r");
+  if (!file) {
+    Serial.println("Erro: Arquivo não encontrado no SD.");
+    return false;
   }
-  file.close();
+
+  DeserializationError error = deserializeJson(doc, file);
+    
+  if (error) {
+      Serial.print("Erro na leitura do JSON: ");
+      Serial.println(error.c_str());
+      return false;
+    }
+  return true; // Sucesso!
+  /*EXEMPLO
+    //TODOS
+    void carregarConfiguracoes() {
+      JsonDocument doc;
+      if (meuSD.readJSON(doc)) {
+          // Percorre todos os pares Chave:Valor dentro do JSON
+          JsonObject obj = doc.as<JsonObject>();
+          for (JsonPair p : obj) {
+              Serial.print("Chave encontrada: ");
+              Serial.print(p.key().c_str());
+              Serial.print(" | Valor: ");
+              Serial.println(p.value().as<const char*>()); // Converte o valor para string
+          }
+      }
+    }
+    //COM CHAVES
+    void carregarConfiguracoes() {
+        JsonDocument config;
+        if (meuSD.readJSON(config)) {
+            // Se eu souber o que tem lá, uso direto:
+            const char* nome = config["usuario"] | "Padrao"; // O '|' define um valor padrão se não existir
+            int nivel = config["nivel_acesso"] | 0;
+            
+            Serial.printf("Bem-vindo %s, seu nível é %d\n", nome, nivel);
+        }
+    }
+  */
 }
 
 // --- EDITAR (UPDATE) ---
-void editJSON() {
+void SDData::updateJSON(const char* chave, const char* novoValor) {
   StaticJsonDocument<200> doc;
-  File file = LittleFS.open(filename, "r");
-  deserializeJson(doc, file);
-  file.close();
-
+  File file = SD.open(filename, "r");
+  if (file) { 
+    deserializeJson(doc, file); 
+    file.close(); 
+  }
   // Modifica o valor desejado
-  doc["versao"] = 2.0;
+  doc[chave] = novoValor;
 
   // Salva novamente
-  file = LittleFS.open(filename, "w");
-  serializeJson(doc, file);
-  file.close();
+  file = SD.open(filename, "w");
+  if (file) {
+    if (serializeJson(doc, file) == 0) {
+        Serial.println("Falha ao atualizar arquivo no SD");
+    }
+    file.close();
+    Serial.printf("Campo '%s' atualizado com sucesso!\n", chave);
+  } else {
+      Serial.println("Erro ao abrir arquivo para salvar atualizacao");
+  }
+
+    /*EXEMPLO
+      // Atualiza a versão
+      meuSD.updateJSON("versao", "3.0");
+
+      // Atualiza o usuário
+      meuSD.updateJSON("usuario", "Joao_Silva");
+
+      // Adiciona um campo que nem existia antes!
+      meuSD.updateJSON("ultimo_acesso", "2025-12-27");
+    */
 }
 
 // --- DELETAR (DELETE) ---
-void deleteArquivo() {
-  if (LittleFS.remove(filename)) {
-    Serial.println("Arquivo deletado");
-  }
+void SDData::deleteArquivo() {
+    // 1. Verificamos se o arquivo existe antes de tentar deletar
+    if (!SD.exists(filename)) {
+        Serial.printf("Erro: O arquivo '%s' não existe para ser deletado.\n", filename);
+        return;
+    }
+
+    // 2. Tentamos remover e avisamos o resultado
+    if (SD.remove(filename)) {
+        Serial.println("Arquivo deletado com sucesso do SD.");
+    } else {
+        Serial.println("Falha ao tentar deletar o arquivo. Verifique se o SD está bloqueado.");
+    }
 }
+
+/*EXMPLO DP ARQUIVO .json
+  {
+    "usuario": "Admin",
+    "versao": 1.0,
+    "ativo": true
+  }
 */

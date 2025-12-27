@@ -30,10 +30,8 @@ String pendinSsid = "";
 String pendingPass = "";
 
 String getSwitchState(bool state) {
-    // Retorna "checked" se o estado for true (ligado), ou uma string vazia se for false (desligado)
-    return state ? "checked" : ""; 
+    return state ? "checked" : ""; // Retorna "checked" se o estado for true (ligado), ou uma string vazia se for false (desligado)
 }
-
 // Função de Processamento para substituir o marcador %STATE% no HTML
 String processor(const String& var){
     Serial.print("Placeholder requisitado: "); Serial.println(var);

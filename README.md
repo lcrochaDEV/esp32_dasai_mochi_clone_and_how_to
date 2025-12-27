@@ -1,4 +1,4 @@
-[PORTUGUêS]
+[PORTUGUÊS]
 
 # 🌐 Smart Screen Controller (ESP32 / ESP8266)
 
@@ -67,5 +67,3 @@ O sistema busca e salva as configurações na seguinte estrutura:
 5. Abra um **Pull Request**.
 
 ---
-
-**Gostaria que eu detalhasse a estrutura do arquivo `config.json` ou que criasse um exemplo do código para a leitura do SD?**
