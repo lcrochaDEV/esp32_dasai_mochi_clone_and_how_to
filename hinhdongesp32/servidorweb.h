@@ -122,13 +122,13 @@ void handleDateTime(AsyncWebServerRequest *request) {
 
 void startServer() {
     // Configuração de Rotas (Endpoints)
-    server.serveStatic("/index/", SD, "/index/");
+    server.serveStatic("/www/", SD, "/www/");
     // Rota raiz (/) - Lendo do SD
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
         // Verifica se o arquivo existe no SD
-        if (SD.exists("/index/index.html")) {
+        if (SD.exists("/www/index.html")) {
             // Enviamos o arquivo do SD passando o processor para templates
-            request->send(SD, "/index/index.html", "text/html", false, processor);
+            request->send(SD, "/www/index.html", "text/html", false, processor);
         } else {
             request->send(404, "text/plain", "Arquivo nao encontrado no SD");
         }

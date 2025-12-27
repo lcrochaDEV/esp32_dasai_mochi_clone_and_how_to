@@ -13,7 +13,7 @@ class WifiConnect: public  Hours_Time{
     WifiConnect(const char* ssid = nullptr, const char* password = nullptr, Animations* animationPtr = nullptr);
     void connections_Wifi();
     void backupRede();
-    const char*  Uptime() const;
+    void Uptime();
     bool connections_status();
     void diconnectRede();
     void wifiOff();

@@ -23,7 +23,6 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define FRAME_DELAY 42  // 24FPS
 
 #include "Animations.h"
-
 Animations::Animations(){}
 
 void Animations::helloWordMochi(String consoleText){

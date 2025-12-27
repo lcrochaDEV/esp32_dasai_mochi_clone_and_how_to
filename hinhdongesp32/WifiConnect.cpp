@@ -81,7 +81,7 @@ void WifiConnect::backupRede() {
   }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 }
 
-const char* WifiConnect::Uptime() const{
+void WifiConnect::Uptime(){
   // 1. Registra os eventos APENAS UMA VEZ (geralmente no setup ou init da classe)
   WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) {
     uint8_t motivo = info.wifi_sta_disconnected.reason;

@@ -13,7 +13,8 @@ Animations animations_exec;
 
 #include "WirelessConnection.h"
 #include "servidorweb.h"
-#include "sdData.h"
+#include "SDData.h"
+SDData SDData_exec;
 
 const char* SSID = "PERIGO";
 const char* PASSWORD = "LIBER@RWIFI";
@@ -27,16 +28,17 @@ void startWifi() {
   wirelessConnection.connections_status();
 }
 
-
 void setup() {
   Serial.begin(115200);
-  sdRun();
+  SDData_exec.sdbegin();
+  SDData_exec.listDir("/", 1);  
   animations_exec.helloWordMochi(); //HELLO WORD
   startWifi();
   hours_Time_exec.time_server(); // TIME
   wirelessConnection.Uptime();
   startServer(); // START SERVIDOR WEB
 }
+
 void loop() {
   animations_exec.animationsLoop();
   hours_Time_exec.weke_on();

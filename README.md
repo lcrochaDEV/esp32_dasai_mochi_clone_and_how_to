@@ -1,32 +1,71 @@
-> [ENGLISH] This project is a clone of Dasai Mochi, the adorable animated character made popular on YouTube. Designed to run on the ESP32 microcontroller, the system renders animated emotes on a TFT display by converting GIFs to C++ code using the powerful tool gif2cpp.
+[PORTUGUêS]
 
+# 🌐 Smart Screen Controller (ESP32 / ESP8266)
 
-####   Project highlights:
-- Displaying animated Mochi emotes on oled screen
--  Using gif2cpp (https://huykhong.com/IOT/gif2cpp) to convert GIFs into lightweight C++ arrays
--  Built on ESP32 
--  Runs smooth 15 FPS animations on ILI9341 / ST7789 displays
--  Ideal for robotic expressions, smart assistants, or pure cuteness
+Este projeto consiste em um firmware robusto para controle temporizado de tela, integrando recursos de conectividade via Web Server, sincronização de tempo real via NTP e persistência de dados em Cartão SD utilizando formato JSON.
 
+## 🚀 Funcionalidades Principal
 
-#### What is gif2cpp?
-- https://huykhong.com/IOT/gif2cpp
-- gif2cpp is an open-source tool that converts animated GIFs into C++ header files – perfect for embedding animations in microcontroller projects where you can't use real-time video formats.
+### ⏲️ Gestão de Tela e Tempo
 
+* **Controle de Ciclo:** Liga e desliga a tela automaticamente com base em tempos pré-definidos.
+* **Relógio NTP:** Sincronização automática de data e hora via internet para garantir precisão no agendamento das tarefas.
 
-#### How to use:
-Tutorial in [my tiktok  ](https://www.tiktok.com/@_huykhong)
-1. Extract emote sections using ffmpeg: (Example commands included)
- `→ ffmpeg -ss ... -to ... -i full.mp4 ... -y emote.gif`
-3. Run gif2cpp to generate .h file
-4.  Include in your ESP32 project.
+### 📶 Conectividade e Rede
 
+* **Wi-Fi Scanner:** Varredura em tempo real de redes Wi-Fi próximas para facilitar a conexão.
+* **Access Point (AP):** Caso não encontre uma rede conhecida, o dispositivo cria sua própria rede Wi-Fi para configuração inicial.
+* **Web Server:** Interface intuitiva hospedada no dispositivo para ajustes de parâmetros sem necessidade de recompilar o código.
 
-####  Original Video Credit:
-🎥 Dasai! Mochi Gen 2 All Emotes (almost)
-→ All emotes are inspired and extracted from this video. Full image rights belong to the original creator.
+### 🛠️ Configuração e Armazenamento
 
+* **Console Serial:** Interface de linha de comando para monitoramento e configurações avançadas via USB.
+* **Leitor de Cartão SD:** Suporte a hardware para leitura e escrita de logs ou arquivos de sistema.
+* **Persistência JSON:** Todas as configurações são salvas em arquivos `.json`, permitindo fácil edição e leitura estruturada de dados.
 
-## [VIETNAMESE]
-• Coi vid tiktok của tôi
-https://www.tiktok.com/@_huykhong
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+* **C++ (Arduino Framework)**
+* **ArduinoJson:** Para manipulação de arquivos de configuração.
+* **ESPAsyncWebServer:** Para a interface de usuário fluida.
+* **NTPClient:** Sincronização de horário.
+* **SPI/SD Library:** Comunicação com o módulo de cartão SD.
+
+---
+
+## 📋 Como utilizar
+
+1. **Conexão Inicial:** Ao ligar pela primeira vez, o dispositivo iniciará em modo **Access Point**. Conecte-se à rede gerada por ele.
+2. **Configuração Web:** Acesse o endereço IP padrão (geralmente `192.168.4.1`) no seu navegador para configurar o Wi-Fi local e os tempos de tela.
+3. **Monitoramento:** Utilize o Serial Monitor (baud rate 115200) para visualizar o status do sistema e o log das operações.
+4. **Cartão SD:** Certifique-se de que o cartão SD esteja formatado em FAT32 para que as configurações JSON sejam lidas corretamente.
+
+---
+
+## 📁 Estrutura de Arquivos (SD Card)
+
+O sistema busca e salva as configurações na seguinte estrutura:
+
+```text
+/
+├── config.json      # Parâmetros de rede e temporizadores
+├── logs.txt         # Histórico de atividades (opcional)
+└── www/             # Arquivos da página Web (HTML/CSS)
+
+```
+
+---
+
+## 🤝 Contribuição
+
+1. Faça um **Fork** do projeto.
+2. Crie uma **Branch** para sua feature (`git checkout -b feature/nova-feature`).
+3. Dê um **Commit** nas suas alterações (`git commit -m 'Adicionando nova feature'`).
+4. Dê um **Push** na sua Branch (`git push origin feature/nova-feature`).
+5. Abra um **Pull Request**.
+
+---
+
+**Gostaria que eu detalhasse a estrutura do arquivo `config.json` ou que criasse um exemplo do código para a leitura do SD?**
