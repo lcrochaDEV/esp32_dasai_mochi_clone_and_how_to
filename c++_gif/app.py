@@ -45,11 +45,13 @@ def varrerDados():
 
 			print("Arquivo enviado com sucesso para o campo de upload.")
 			# MENU
-			driver.find_element(By.XPATH, "//option[@value=1]").click() #options
+			driver.find_element(By.XPATH, "//option[@value='DEC']").click() #Code format
+			#driver.find_element(By.XPATH, "//option[@value=1]").click() #Code format
 			driver.find_element(By.XPATH, "//input[@id='txtResizeX']").clear() # Boa prática limpar antes
 			driver.find_element(By.XPATH, "//input[@id='txtResizeX']").send_keys("128")
 			driver.find_element(By.XPATH, "//input[@id='txtResizeY']").clear()
 			driver.find_element(By.XPATH, "//input[@id='txtResizeY']").send_keys("64")
+			driver.find_element(By.XPATH, "//*[@id='cbPaletteMod']/option[8]").click() #Palette mod
 			print("Valores X e Y inseridos.")
 			# --- MODIFICAÇÃO AQUI ---
 			checkbox_unsigned = driver.find_element(By.XPATH, "//input[@id='cbUnsigned']") # unsigned

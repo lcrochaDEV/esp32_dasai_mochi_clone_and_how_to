@@ -82,7 +82,7 @@ void SDData::listDir(const char * dirname, uint8_t levels) {
 }
 
 // --- GRAVAR (CREATE) ---
-void SDData::gravarJSON(JsonDocument& doc) {
+void SDData::createJSON(JsonDocument& doc) {
   File file = SD.open(filename, "w");
   if (!file) return;
 

@@ -13,7 +13,7 @@ class SDData {
     void sdbegin();
     bool createFolder(const char * filename); // Novo método
     void listDir(const char * dirname, uint8_t levels);
-    void gravarJSON(JsonDocument& doc);
+    void createJSON(JsonDocument& doc);
     bool readJSON(JsonDocument& doc);
     void updateJSON(const char* chave, const char* novoValor);
     void deleteArquivo();

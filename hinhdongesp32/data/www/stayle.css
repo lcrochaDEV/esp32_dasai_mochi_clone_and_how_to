@@ -60,6 +60,10 @@ nav .icon {
     justify-content: space-between;
     background-color:  rgba(26, 13, 46, 0.411);
 }
+.wekeon {
+    display: flex;
+    justify-content: space-between;
+}
 .menu {
     display: flex;
     justify-items: start;
