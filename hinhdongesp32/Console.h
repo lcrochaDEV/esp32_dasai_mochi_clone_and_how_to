@@ -9,13 +9,13 @@ class Console: public WifiConnect{
   public:
     Console(const char* consoleText = nullptr);
     //MENSAGEM DE TODO O PROGRAMA
-    void helloWord(String consoleText = "Hello Mochi");
-    void menssageViewMsg(String consoleText = "Hello Mochi");
+    void helloWord(const char* consoleText = "Hello Mochi");
+    void menssageViewMsg(const char* consoleText = "Hello Mochi");
     void consoleView();
 
   private:
     const char* consoleText;
-    void commands_envio(String consoleText);
+    void commands_envio(const char* consoleText);
 };
  
 #endif
