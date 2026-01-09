@@ -193,14 +193,14 @@ header h3, section h3 {
 section h3, p {
     margin: 10px 15px;
 }
-/*NETWORK SCAN*/
-.conteiner_scan {
+/*NETWORK SCAN + ESP-NOW*/
+.conteiner_scan, .conteiner_esp-now {
     text-decoration: none;
     margin: 10px 15px;
     color: #fff;
     font-weight: bold;
 }
-.conteiner_scan span {
+.conteiner_scan span, .conteiner_esp-now span {
     font-weight: 400;
     padding: 10px;
 }
@@ -329,7 +329,7 @@ button:hover {
 }
 
 /* CSS BTN SCAN*/
-.scan {
+.scan, .esp-now {
   padding: 0.9em 1em;
   border: none;
   outline: none;
@@ -344,7 +344,7 @@ button:hover {
   touch-action: manipulation;
 }
 
-.scan:before {
+.scan:before, .esp-now:before {
   content: "";
   background: linear-gradient(
     40deg,
@@ -384,7 +384,7 @@ button:hover {
   }
 }
 
-.scan:after {
+.scan:after, .esp-now:after{
   z-index: -1;
   content: "";
   position: absolute;

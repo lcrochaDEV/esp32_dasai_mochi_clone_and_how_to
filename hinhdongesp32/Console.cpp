@@ -34,7 +34,7 @@ void Console::commands_envio(const char* comando) {
   String prefixo = "Mochi> ";
   menssageViewMsg((prefixo + comando).c_str());
 
-  if (comando == "SCAN") {
+  if (comando == "SCANWF") {
     // Chama o método herdado de WifiConnect
     this->searchRedes(); 
   } 

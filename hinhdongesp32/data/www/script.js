@@ -193,7 +193,7 @@ scan.addEventListener("click", async () => {
                         `;
                     });
                 }
-                escaneando = false; 
+                escaneando = false;
 
             } else if (conexao.status === 202) {
                 tentativas++;
@@ -208,6 +208,61 @@ scan.addEventListener("click", async () => {
         scan.disabled = false; // Reabilita o botão
     }
 });
+
+const espnow = document.querySelector(".esp-now");
+const itemEspnow = document.querySelector('.conteiner_Esp-now');
+const conteiner_Espnow = document.getElementById("lista_esp-now");
+
+espnow.addEventListener("click", async () => {
+    itemEspnow.innerHTML = "";
+    conteiner_Espnow.innerHTML = "<p style='padding:15px;'>Buscando redes...</p>";
+    
+    // Desabilitar o botão para evitar múltiplos cliques simultâneos
+    espnow.disabled = true;
+    try {
+        let escaneando = true;
+        let tentativas = 0;
+        while (escaneando && tentativas < 10) { // Limite de segurança de 10 tentativas (20s)
+            let dataRequest =  await ConnectJson.connectJsonUrlJson('/espnow');
+
+            if (dataRequest.length >= 0) {
+                conteiner_Espnow.innerHTML = ""; 
+                if (dataRequest.length === 0) {
+                        itemEspnow.innerHTML = "<p style='padding:15px;'>Nenhuma rede encontrada.</p>";
+                } else {
+                    dataRequest.forEach(espnow => {
+                        // Importante: use classes em vez de IDs repetidos
+                        itemEspnow.innerHTML += `
+                            <form id="isProtected">
+                                <div class="form-group">
+                                    <input type="checkbox">
+                                    <label for="nomeRede">SSID: <span>${espnow.ssid}</span></label>
+                                    <label for="device_mac">MAC: <span>${espnow.mac}</span></label>
+                                </div>
+                                <div id="passGroupOculto" class="oculto">
+                                    <input type="password" name="password" data-ssid="${espnow.ssid}" placeholder="Digite a senha" required>
+                                    <button type="submit">Conectar</button>
+                                </div>
+                            </form>
+                            <hr style="border: 0.1px solid var(--color-boder); margin: 10px 0;">
+                        `;
+                    });
+                }
+            escaneando = false;
+            } else if (dataRequest.status === 202) {
+                tentativas++;
+                await delay(2000); // Espera 2 segundos antes da próxima volta do loop
+            } else {
+                throw new Error("Erro no servidor");
+            }
+        }
+    } catch (error) {
+        conteiner_Espnow.innerHTML = "<p style='padding:15px;'>Erro na conexão!</p>";
+    } finally {
+        espnow.disabled = false; // Reabilita o botão
+    }
+});
+
 // Função que abre/fecha a div da senha
 item.addEventListener('change', (event) => {
     // 1. O checkbox que disparou o evento

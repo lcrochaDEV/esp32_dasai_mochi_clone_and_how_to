@@ -87,9 +87,21 @@
                 <!-- Os itens de rede serão injetados aqui via JavaScript -->
                 <p style="padding:15px;">Clique no ícone para escanear.</p>
             </div>
-            <div class="conteiner_scan">
-
+            <div class="conteiner_scan"></div>
+        </div>
+    </section>
+    <section>
+        <div class="conteiner">
+            <div class="conteiner_top">
+                <h3>ESP-NOW Scan</h3>
+                <!-- HTML !-->
+                <button class="esp-now" role="button"><span class="material-symbols-outlined">settings_remote</span></button>
             </div>
+            <div id="lista_esp-now">
+                <!-- Os itens de rede serão injetados aqui via JavaScript -->
+                <p style="padding:15px;">Clique no ícone para escanear.</p>
+            </div>
+            <div class="conteiner_esp-now"></div>
         </div>
     </section>
     <dialog id="animationDialog">
@@ -120,7 +132,9 @@
             </form>
         </div>
     </dialog>
+    <script src="www/ConnectJson.js"></script>
     <script src="www/script.js"></script>
+    <script src="ConnectJson.js"></script>
     <script src="script.js"></script>
     </body>
     </html>

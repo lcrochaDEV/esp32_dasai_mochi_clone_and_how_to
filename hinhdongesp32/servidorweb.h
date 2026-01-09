@@ -174,6 +174,39 @@ void startServer() {
         WiFi.scanDelete();
     });
 
+    // Rota para obter a lista de dispositivos para ESP-NOW
+    server.on("/espnow", HTTP_GET, [](AsyncWebServerRequest *request){
+        int n = WiFi.scanComplete(); // Verifica o status do scan
+
+        // Se o scan ainda não foi iniciado ou está em progresso
+        if(n < 0) {
+            if(n == -2) {
+                // Inicia um novo scan em background (async = true)
+                // show_hidden = true ajuda a encontrar dispositivos que não transmitem SSID
+                WiFi.scanNetworks(true, true); 
+            }
+            // Retorna 202 para o JavaScript continuar tentando no loop 'while'
+            request->send(202, "application/json", "{\"status\":\"scanning\"}");
+            return;
+        }
+
+        // Se chegou aqui, o scan terminou (n >= 0)
+        JsonDocument doc; 
+        JsonArray root = doc.to<JsonArray>();
+
+        for (int i = 0; i < n; ++i) {
+            JsonObject item = root.add<JsonObject>();
+            
+            // Dados fundamentais para o ESP-NOW
+            item["ssid"] = WiFi.SSID(i).length() > 0 ? WiFi.SSID(i) : "* Rede Oculta *";
+            item["mac"]  = WiFi.BSSIDstr(i); // O endereço MAC que seu JS espera
+        }
+
+        String response;
+        serializeJson(doc, response);
+        request->send(200, "application/json", response); // Retorna a lista completa com status 200
+        WiFi.scanDelete(); // Importante: deleta o scan da memória para permitir que o próximo clique no botão reinicie o processo
+    });
     server.on("/connect", HTTP_GET, [](AsyncWebServerRequest *request){
         if (request->hasParam("ssid") && request->hasParam("pass")) {
             String pendingSsid = request->getParam("ssid")->value();

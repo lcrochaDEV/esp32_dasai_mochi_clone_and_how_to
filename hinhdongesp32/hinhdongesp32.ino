@@ -3,7 +3,7 @@
 Console console;
 
 
-const char* hours_wakeon = "06:30"; // hours_down: Deve ser o fim do período noturno (06:00).
+const char* hours_wakeon = "06:30";  // hours_down: Deve ser o fim do período noturno (06:00).
 const char* hours_sleep = "22:03";   // hours_up: Deve ser o início do período noturno (22:00).
 #include "Hours_Time.h"
 Hours_Time hours_Time_exec = Hours_Time(hours_sleep, hours_wakeon);
@@ -23,20 +23,22 @@ WirelessConnection wirelessConnection = WirelessConnection(SSID, PASSWORD);
 
 void startWifi() {
   wirelessConnection.backupRede();
-  wirelessConnection.connections_Wifi(); // CONNECT WIFI
-  wirelessConnection.searchRedes(); //SCAN WIFI REDE
-  wirelessConnection.connections_status();
+  wirelessConnection.connections_Wifi();  // CONNECT WIFI
+  wirelessConnection.searchRedes();       //SCAN WIFI REDE
+  //wirelessConnection.connections_status();
+  //wirelessConnection.btClassicScan();
 }
 
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   SDData_exec.sdbegin();
-  SDData_exec.listDir("/", 1);  
-  animations_exec.helloWordMochi(); //HELLO WORD
+  SDData_exec.listDir("/", 1);
+  animations_exec.helloWordMochi();  //HELLO WORD
   startWifi();
-  hours_Time_exec.time_server(); // TIME
-  wirelessConnection.Uptime();
-  startServer(); // START SERVIDOR WEB
+  hours_Time_exec.time_server();  // TIME
+  wirelessConnection.Uptime();    // ALARMES DE QUEDAS UP/DOWN
+  startServer();                  // START SERVIDOR WEB
 }
 
 void loop() {
@@ -44,4 +46,4 @@ void loop() {
   hours_Time_exec.weke_on();
   //CONSOLE
   console.consoleView();
-} 
+}
