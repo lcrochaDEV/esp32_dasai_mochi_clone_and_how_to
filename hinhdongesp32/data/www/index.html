@@ -67,12 +67,26 @@
             <div class="conteiner_top">
                 <h3>Wakeon Mode</h3>
             </div>
-            <div class="wekeon">
-                <p><span>Wakon: </span></p><p>%WAKEON_DISPLAY%</p>
-            </div>
-            <div class="wekeon">
-                <p><span>Sleep: </span></p><p>%SLEEP_DISPLAY%</p>
-            </div>
+            
+            <form id="wakeonHtmlForm" style="display: flex; flex-direction: column; gap: 12px; padding: 5px 0;">
+                <div class="form-group-inline">
+                    <label for="web_wake_up_time">
+                        <span>Wakeon:</span>
+                        <small class="help-tag" title="Define o horário em que o display OLED sairá do modo de suspensão automaticamente."><i class="material-symbols-outlined">info</i></small>
+                    </label>
+                    <input type="time" id="web_wake_up_time" required>
+                </div>
+
+                <div class="form-group-inline">
+                    <label for="web_sleep_time">
+                        <span>Sleep:</span>
+                        <small class="help-tag" title="Define o horário em que o display OLED entrará em modo de economia/suspensão profunda."><i class="material-symbols-outlined">info</i></small>
+                    </label>
+                    <input type="time" id="web_sleep_time" required>
+                </div>
+
+                <button type="submit" class="form_btn_time">WakeOn</button>
+            </form>
         </div>
         <!--<div class="conteiner"></div>-->
     </header>

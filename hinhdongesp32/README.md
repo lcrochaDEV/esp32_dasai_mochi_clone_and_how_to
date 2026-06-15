@@ -58,6 +58,46 @@ A fiação exata pode variar dependendo do seu módulo display e leitor de cart�
 | **D22** | SCLK (SCK) | SCK | Clock SPI |
 
 
+### 🔌 Esquema de Ligação: **ESP32-C3 Super Mini** para Módulo Cartão SD
+
+Baseado na fiação da sua imagem antiga, converta as conexões para os novos pinos físicos do C3 Super Mini:
+
+| Pino do Módulo SD (Sua Imagem) | Cor do Fio (Imagem) | Novo Pino no ESP32-C3 Super Mini | 
+| :--- | :--- | :--- |
+| 3V3 | 🔴 Vermelho | 3V3
+| CS  | 🟡 Amarelo | G4 (GPIO 7)
+| MOSI  | 🟤 Bege / Marrom | G6 (GPIO 6)
+| CLK | 🔵 Azul | G5 (GPIO 4)
+| MISO  | 🟢 Verde | G3 (GPIO 5)
+| GND |⚫ Preto | GND |
+
+### 📺 Onde ligar o Display OLED SSD1306?
+
+Como você vai usar os pinos acima para o cartão SD, o display OLED deve ser ligado obrigatoriamente nos pinos de hardware I2C do C3:
+
+* VCC do OLED ➡️ 3V3 do C3
+* GND do OLED ➡️ GND do C3
+* SDA do OLED ➡️ G2 (GPIO 8) do C3 (Nota: O LED azul nativo da placa piscará de leve junto com os dados da tela).
+* SCL do OLED ➡️ G1 (GPIO 9) do C3
+
+### 🖼️ Mapa Visual de Pinagem para Referência
+
+Para te ajudar a localizar os pinos na placa compacta:
+```txt
+Plaintext       
+
+       LADO ESQUERDO                         LADO DIREITO
+     +-----------------+                 +-----------------+
+     |  [ ] 3V3        |                 |  [ ] 5V         |
+     |  |*| G4  (CS)   |                 |  |*| G3  (MISO) |
+     |  |*| G5  (CLK)  |                 |  |*| G2  (SDA)  |
+     |  |*| G6  (MOSI) |                 |  |*| G1  (SCL)  |
+     |  [ ] G7         |                 |  [ ] G0         |
+     |  [ ] TX         |                 |  [ ] RX         |
+     |  [ ] GND        |                 |  [ ] GND        |
+     +--------+--------+                 +--------+--------+
+              |      [ Conector USB-C ]           |
+```
 ## 🚀 Como Executar
 
 1.  Insira o cartão MicroSD (com o arquivo de dados de vídeo na raiz) no leitor.

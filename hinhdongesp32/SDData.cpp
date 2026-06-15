@@ -1,8 +1,9 @@
 #include "SDData.h"
 
-SDData::SDData(const char* filename)
-  : filename(filename)
-{}
+SDData::SDData(const char* filename) {
+    // Se passar nullptr, assume o caminho padrão do projeto
+    this->filename = (filename != nullptr) ? filename : "/data/config.json";
+}
 
 // Starta o SD
 void SDData::sdbegin() {
@@ -26,6 +27,8 @@ void SDData::sdbegin() {
       uint64_t cardSize = SD.cardSize() / (1024 * 1024);
       Serial.printf("Tamanho do cartao: %lluMB\n", cardSize);
     }
+    // Garante de forma automática que o diretório padrão exista no SD
+    createFolder("/data");
 }
 
 // Cria diretórios no cartão SD
@@ -113,51 +116,51 @@ void SDData::createJSON(JsonDocument& doc) {
 // --- LER (READ) ---
 bool SDData::readJSON(JsonDocument& doc) {
   File file = SD.open(filename, "r");
-  if (!file) {
-    Serial.println("Erro: Arquivo não encontrado no SD.");
-    return false;
-  }
-
-  DeserializationError error = deserializeJson(doc, file);
-    
-  if (error) {
-      Serial.print("Erro na leitura do JSON: ");
-      Serial.println(error.c_str());
-      return false;
+    if (!file) {
+        Serial.println("⚠️ Arquivo não encontrado no SD.");
+        return false;
     }
-  return true; // Sucesso!
-  /*EXEMPLO
-    //TODOS
-    void carregarConfiguracoes() {
-      JsonDocument doc;
-      if (meuSD.readJSON(doc)) {
-          // Percorre todos os pares Chave:Valor dentro do JSON
-          JsonObject obj = doc.as<JsonObject>();
-          for (JsonPair p : obj) {
-              Serial.print("Chave encontrada: ");
-              Serial.print(p.key().c_str());
-              Serial.print(" | Valor: ");
-              Serial.println(p.value().as<const char*>()); // Converte o valor para string
+
+    DeserializationError error = deserializeJson(doc, file);
+    file.close();
+      
+    if (error) {
+        Serial.printf("❌ Erro na leitura do JSON: %s\n", error.c_str());
+        return false;
+    }
+    return true; // Sucesso!
+    /*EXEMPLO
+      //TODOS
+      void carregarConfiguracoes() {
+        JsonDocument doc;
+        if (meuSD.readJSON(doc)) {
+            // Percorre todos os pares Chave:Valor dentro do JSON
+            JsonObject obj = doc.as<JsonObject>();
+            for (JsonPair p : obj) {
+                Serial.print("Chave encontrada: ");
+                Serial.print(p.key().c_str());
+                Serial.print(" | Valor: ");
+                Serial.println(p.value().as<const char*>()); // Converte o valor para string
+            }
+        }
+      }
+      //COM CHAVES
+      void carregarConfiguracoes() {
+          JsonDocument config;
+          if (meuSD.readJSON(config)) {
+              // Se eu souber o que tem lá, uso direto:
+              const char* nome = config["usuario"] | "Padrao"; // O '|' define um valor padrão se não existir
+              int nivel = config["nivel_acesso"] | 0;
+              
+              Serial.printf("Bem-vindo %s, seu nível é %d\n", nome, nivel);
           }
       }
-    }
-    //COM CHAVES
-    void carregarConfiguracoes() {
-        JsonDocument config;
-        if (meuSD.readJSON(config)) {
-            // Se eu souber o que tem lá, uso direto:
-            const char* nome = config["usuario"] | "Padrao"; // O '|' define um valor padrão se não existir
-            int nivel = config["nivel_acesso"] | 0;
-            
-            Serial.printf("Bem-vindo %s, seu nível é %d\n", nome, nivel);
-        }
-    }
-  */
+    */
 }
 
 // --- EDITAR (UPDATE) ---
 void SDData::updateJSON(const char* chave, const char* novoValor) {
-  StaticJsonDocument<200> doc;
+  JsonDocument doc;
   File file = SD.open(filename, "r");
   if (file) { 
     deserializeJson(doc, file); 
@@ -190,19 +193,107 @@ void SDData::updateJSON(const char* chave, const char* novoValor) {
     */
 }
 
-// --- DELETAR (DELETE) ---
-void SDData::deleteArquivo() {
-    // 1. Verificamos se o arquivo existe antes de tentar deletar
+// --- LISTAR/IMPRIMIR DADOS FORMATADOS NO CONSOLE ---
+void SDData::printJSON() {
     if (!SD.exists(filename)) {
-        Serial.printf("Erro: O arquivo '%s' não existe para ser deletado.\n", filename);
+        Serial.printf("[SDData] Erro: O arquivo '%s' não existe para análise.\n", filename);
         return;
     }
 
-    // 2. Tentamos remover e avisamos o resultado
-    if (SD.remove(filename)) {
-        Serial.println("Arquivo deletado com sucesso do SD.");
+    File file = SD.open(filename, FILE_READ);
+    if (!file) {
+        Serial.printf("[SDData] Erro ao abrir o arquivo '%s' para leitura.\n", filename);
+        return;
+    }
+
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, file);
+    file.close();
+
+    if (error) {
+        Serial.printf("[SDData] Erro ao processar o JSON para o console: %s\n", error.c_str());
+        return;
+    }
+
+    Serial.println("\n=============================================");
+    Serial.printf("🔍 ANÁLISE DE DADOS DO ARQUIVO: %s\n", filename);
+    Serial.println("=============================================");
+    
+    // Imprime o JSON de forma "bonita" e identada no Monitor Serial
+    serializeJsonPretty(doc, Serial);
+    
+    Serial.println("\n=============================================\n");
+}
+
+// --- ESCRITA / EDIÇÃO (Salva a estrutura com o objeto aninhado) ---
+bool SDData::saveWakeonSettings(const String& name, const String& wakeon, const String& sleep) {
+    File file = SD.open(filename, FILE_WRITE); // FILE_WRITE sobrescreve limpando o arquivo antigo
+    if (!file) {
+        Serial.println("[SDData] Erro ao abrir arquivo para escrita.");
+        return false;
+    }
+
+    JsonDocument doc;
+    doc["id"] = "1";
+    doc["name"] = name;
+
+    // Cria o objeto aninhado 'wakeonMode' conforme solicitado
+    JsonObject wakeonMode = doc["wakeonMode"].to<JsonObject>();
+    wakeonMode["wakeon"] = wakeon;
+    wakeonMode["sleep"] = sleep;
+
+    // Serializa direto no arquivo de forma eficiente
+    if (serializeJson(doc, file) == 0) {
+        Serial.println("[SDData] Falha ao serializar JSON.");
+        file.close();
+        return false;
+    }
+
+    file.close();
+    Serial.println("[SDData] Configurações de wakeonMode salvas com sucesso!");
+    return true;
+}
+
+// --- LEITURA / RECUPERAÇÃO (Extrai os dados de dentro de wakeonMode) ---
+bool SDData::loadWakeonSettings(String& outName, String& outWakeon, String& outSleep) {
+    if (!SD.exists(filename)) {
+        Serial.println("[SDData] Arquivo de configuração não existe.");
+        return false;
+    }
+
+    File file = SD.open(filename, FILE_READ);
+    if (!file) return false;
+
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, file);
+    file.close();
+
+    if (error) {
+        Serial.printf("[SDData] Erro ao processar JSON: %s\n", error.c_str());
+        return false;
+    }
+
+    // Recupera o nome principal
+    outName = doc["name"] | "Mochi Robot";
+
+    // Acessa de forma segura o objeto interno wakeonMode
+    JsonObject wakeonMode = doc["wakeonMode"];
+    outWakeon = wakeonMode["wakeon"] | "07:00"; // Fallback caso a chave não exista
+    outSleep  = wakeonMode["sleep"]  | "22:00";
+
+    return true;
+}
+
+// --- DELETAR (DELETE) ---
+void SDData::deleteArquivo() {
+    if (SD.exists(filename)) {
+        if (SD.remove(filename)) {
+            Serial.printf("[SDData] Arquivo '%s' deletado com sucesso do SD.\n", filename);
+        } else {
+            Serial.printf("[SDData] Falha crítica ao tentar deletar '%s'.\n", filename);
+        }
     } else {
-        Serial.println("Falha ao tentar deletar o arquivo. Verifique se o SD está bloqueado.");
+        Serial.printf("[SDData] Operação cancelada: '%s' não existe.\n", filename);
     }
 }
 

@@ -44,7 +44,6 @@ window.addEventListener('load', async () => {
 
     let txtarea = document.querySelector('.frame-section');
     data.frames.forEach((frameData, index) => {
-
         txtarea.innerHTML = `
             <div class="form-group">
                 <label for="frameName_${index}">Nome do Frame ${index + 1}:</label>
@@ -56,13 +55,12 @@ window.addEventListener('load', async () => {
             </div>
         `;
     });
-})
+});
 
-// Função para lidar com o envio do formulário (simulado)
+// Formulário de Configuração de Animação
 document.getElementById('animationForm').addEventListener('submit', function(event) {
     event.preventDefault();
 
-    // Coleta os dados do formulário para um novo objeto JSON
     let updatedData = {
         name: document.getElementById('name').value,
         wake_up_time: document.getElementById('wake_up_time').value,
@@ -70,10 +68,9 @@ document.getElementById('animationForm').addEventListener('submit', function(eve
         frames: []
     };
 
-    // Coleta dados dos frames
     document.querySelectorAll('.frame-section').forEach((frameDiv, index) => {
         let frameName = document.getElementById(`frameName_${index}`).value;
-        let frameValue = document.getElementById(`frameData_${index}`).value; // Dados brutos (readonly)
+        let frameValue = document.getElementById(`frameData_${index}`).value;
 
         updatedData.frames.push({
             frame_name: frameName,
@@ -82,57 +79,50 @@ document.getElementById('animationForm').addEventListener('submit', function(eve
     });
 
     console.log("Dados a serem enviados/salvos:", updatedData);
-    alert("Formulário enviado com sucesso! Verifique o console para o objeto JSON gerado.");
+    alert("Formulário enviado com sucesso!");
 });
 
+// Controle do Modal/Dialog
 const animationDialog = document.getElementById('animationDialog');
 const acultar_form = document.querySelector('.acultar_form');
 const closeDialogButton = document.getElementById('closeDialogButton');
-// 1. Mostrar o diálogo quando o botão "Abrir" for clicado
+
 acultar_form.addEventListener('click', () => {
-    // showModal() abre o diálogo e adiciona um backdrop (fundo escuro)
     animationDialog.showModal(); 
 });
 
-// 2. Fechar o diálogo quando o botão "Fechar" for clicado
 closeDialogButton.addEventListener('click', () => {
     animationDialog.close();
 });
 
-// Chame a função quando o documento estiver pronto
+// CORREÇÃO BUG 1: Switches com arrow function corrigida usando event.target
 document.addEventListener('DOMContentLoaded', () => {
     const switches = document.querySelectorAll('.switch');
     switches.forEach(switchElement => {
-        switchElement.addEventListener('change', () => {
-            const deviceId = this.id.split('-')[1]; // Ex: 'switch-wifi' -> 'wifi'
-            const newState = this.checked ? 'on' : 'off';
+        switchElement.addEventListener('change', (event) => {
+            const target = event.target; 
+            const deviceId = target.id.split('-')[1]; // 'switch-wifi' -> 'wifi'
+            const newState = target.checked ? 'on' : 'off';
             
-            // Redireciona para a rota /toggle com os parâmetros de dispositivo e estado
             window.location.href = `/toggle?device=${deviceId}&state=${newState}`;
         });
     });
 });
 
-
-//DATE HOUR
+// RELÓGIO (DATE & HOUR)
 const currentHourElement = document.getElementById('current_hour');
 const currentDateElement = document.getElementById('current_date');
 
 async function updateDateTime() {
     try {
-        // Chama o novo endpoint que retorna a data e hora em formato JSON
         const response = await fetch('/datetime');
-        
         if (response.ok) {
             const data = await response.json();
-            
-            // Atualiza os elementos HTML com os dados JSON
             currentHourElement.textContent = data.time;
             currentDateElement.textContent = data.date;
         } else {
             currentHourElement.textContent = "--:--:--";
             currentDateElement.textContent = "--/--/----";
-            console.error("Erro ao buscar data/hora. Status:", response.status);
         }
     } catch (error) {
         console.error("Erro de rede ao buscar data/hora:", error);
@@ -140,15 +130,13 @@ async function updateDateTime() {
         currentDateElement.innerHTML = '<span class="material-symbols-outlined icon">wifi_off</span>';
     }
 }
-// Chama a função a cada 1 segundo (1000ms)
 setInterval(updateDateTime, 1000); 
-updateDateTime(); // Chama imediatamente na carga
+updateDateTime();
 
-
-//SCAN SCRIPT
-// 1. Defina a função delay no topo do seu script
+// Auxiliar de atraso (Delay)
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
+// SCAN DE REDES WI-FI
 const scan = document.querySelector(".scan");
 const item = document.querySelector('.conteiner_scan');
 const conteiner = document.getElementById("lista_redes");
@@ -156,15 +144,13 @@ const conteiner = document.getElementById("lista_redes");
 scan.addEventListener("click", async () => {
     item.innerHTML = "";
     conteiner.innerHTML = "<p style='padding:15px;'>Buscando redes...</p>";
-    
-    // Desabilitar o botão para evitar múltiplos cliques simultâneos
     scan.disabled = true;
 
     try {
         let escaneando = true;
         let tentativas = 0;
 
-        while (escaneando && tentativas < 10) { // Limite de segurança de 10 tentativas (20s)
+        while (escaneando && tentativas < 10) {
             const conexao = await fetch('/scan');
             
             if (conexao.status === 200) {
@@ -175,16 +161,15 @@ scan.addEventListener("click", async () => {
                     item.innerHTML = "<p style='padding:15px;'>Nenhuma rede encontrada.</p>";
                 } else {
                     redes.forEach(rede => {
-                        // Importante: use classes em vez de IDs repetidos
                         item.innerHTML += `
-                            <form id="isProtected">
+                            <form class="wifi-connect-form">
                                 <div class="form-group">
-                                    <input type="checkbox">
-                                    <label for="nomeRede">SSID: <span>${rede.ssid}</span></label>
-                                    <label for="potencia">Potência: <span>${rede.rssi} dBm</span></label>
-                                    <label for="encryption">Encryption: <span>${rede.enc}</span></label>
+                                    <input type="checkbox" class="show-pass-check">
+                                    <label>SSID: <span>${rede.ssid}</span></label>
+                                    <label>Potência: <span>${rede.rssi} dBm</span></label>
+                                    <label>Encryption: <span>${rede.enc}</span></label>
                                 </div>
-                                <div id="passGroupOculto" class="oculto">
+                                <div class="passGroupOculto oculto">
                                     <input type="password" name="password" data-ssid="${rede.ssid}" placeholder="Digite a senha" required>
                                     <button type="submit">Conectar</button>
                                 </div>
@@ -194,10 +179,9 @@ scan.addEventListener("click", async () => {
                     });
                 }
                 escaneando = false;
-
             } else if (conexao.status === 202) {
                 tentativas++;
-                await delay(2000); // Espera 2 segundos antes da próxima volta do loop
+                await delay(2000);
             } else {
                 throw new Error("Erro no servidor");
             }
@@ -205,91 +189,133 @@ scan.addEventListener("click", async () => {
     } catch (error) {
         conteiner.innerHTML = "<p style='padding:15px;'>Erro na conexão!</p>";
     } finally {
-        scan.disabled = false; // Reabilita o botão
+        scan.disabled = false;
     }
 });
 
+// SCAN ESP-NOW (CORREÇÃO BUG 2: Seletor consertado para minúsculo '.conteiner_esp-now')
 const espnow = document.querySelector(".esp-now");
-const itemEspnow = document.querySelector('.conteiner_Esp-now');
+const itemEspnow = document.querySelector('.conteiner_esp-now');
 const conteiner_Espnow = document.getElementById("lista_esp-now");
 
 espnow.addEventListener("click", async () => {
     itemEspnow.innerHTML = "";
-    conteiner_Espnow.innerHTML = "<p style='padding:15px;'>Buscando redes...</p>";
-    
-    // Desabilitar o botão para evitar múltiplos cliques simultâneos
+    conteiner_Espnow.innerHTML = "<p style='padding:15px;'>Buscando dispositivos ESP-NOW...</p>";
     espnow.disabled = true;
+
     try {
         let escaneando = true;
         let tentativas = 0;
-        while (escaneando && tentativas < 10) { // Limite de segurança de 10 tentativas (20s)
-            let dataRequest =  await ConnectJson.connectJsonUrlJson('/espnow');
+        while (escaneando && tentativas < 10) {
+            let dataRequest = await ConnectJson.connectJsonUrlJson('/espnow');
 
-            if (dataRequest.length >= 0) {
+            if (dataRequest && dataRequest.length >= 0) {
                 conteiner_Espnow.innerHTML = ""; 
                 if (dataRequest.length === 0) {
-                        itemEspnow.innerHTML = "<p style='padding:15px;'>Nenhuma rede encontrada.</p>";
+                    itemEspnow.innerHTML = "<p style='padding:15px;'>Nenhum dispositivo encontrado.</p>";
                 } else {
-                    dataRequest.forEach(espnow => {
-                        // Importante: use classes em vez de IDs repetidos
+                    dataRequest.forEach(dev => {
                         itemEspnow.innerHTML += `
-                            <form id="isProtected">
+                            <form class="esp-connect-form">
                                 <div class="form-group">
-                                    <input type="checkbox">
-                                    <label for="nomeRede">SSID: <span>${espnow.ssid}</span></label>
-                                    <label for="device_mac">MAC: <span>${espnow.mac}</span></label>
-                                </div>
-                                <div id="passGroupOculto" class="oculto">
-                                    <input type="password" name="password" data-ssid="${espnow.ssid}" placeholder="Digite a senha" required>
-                                    <button type="submit">Conectar</button>
+                                    <label>SSID: <span>${dev.ssid || 'Desconhecido'}</span></label>
+                                    <label>MAC: <span>${dev.mac}</span></label>
                                 </div>
                             </form>
                             <hr style="border: 0.1px solid var(--color-boder); margin: 10px 0;">
                         `;
                     });
                 }
-            escaneando = false;
-            } else if (dataRequest.status === 202) {
+                escaneando = false;
+            } else if (dataRequest && dataRequest.status === 202) {
                 tentativas++;
-                await delay(2000); // Espera 2 segundos antes da próxima volta do loop
+                await delay(2000);
             } else {
                 throw new Error("Erro no servidor");
             }
         }
     } catch (error) {
-        conteiner_Espnow.innerHTML = "<p style='padding:15px;'>Erro na conexão!</p>";
+        conteiner_Espnow.innerHTML = "<p style='padding:15px;'>Erro na conexão ESP-NOW!</p>";
     } finally {
-        espnow.disabled = false; // Reabilita o botão
+        espnow.disabled = false;
     }
 });
 
-// Função que abre/fecha a div da senha
+// Evento dinâmico para abrir a senha das redes injetadas via HTML
 item.addEventListener('change', (event) => {
-    // 1. O checkbox que disparou o evento
     const checkbox = event.target;
-
-    // 2. Encontra o "passGroup" que está LOGO APÓS a div pai do checkbox
-    // Usamos nextElementSibling para pular espaços vazios do HTML
-    let passDiv = checkbox.parentElement.nextElementSibling;
-
-    // 3. Verificamos se o passDiv existe e se é o elemento correto
-    if (passDiv && (passDiv.id === "passGroupOculto")) {
-        if (checkbox.checked) {
-            passDiv.classList.remove("oculto");
-            passDiv.querySelector('input').focus();
-        } else {
-            passDiv.classList.add("oculto");
+    if (checkbox.type === 'checkbox') {
+        let passDiv = checkbox.parentElement.nextElementSibling;
+        if (passDiv && passDiv.classList.contains("passGroupOculto")) {
+            if (checkbox.checked) {
+                passDiv.classList.remove("oculto");
+                passDiv.querySelector('input').focus();
+            } else {
+                passDiv.classList.add("oculto");
+            }
         }
     }
 });
 
+// Envio das credenciais Wi-Fi para o ESP32
 item.addEventListener('submit', async (event) => {
     event.preventDefault();
-    let ssid = event.target['password'].dataset.ssid
-    let passw = event.target.elements['password'].value;
-    // Envia os dados para o ESP32
-    const response = await fetch(`/connect?ssid=${ssid}&pass=${passw}`);
-    if (response.ok) {
-        alert("Comando enviado! Aguarde a conexão.");
+    const form = event.target;
+    const passwordInput = form.querySelector('input[type="password"]');
+    
+    if (passwordInput) {
+        let ssid = passwordInput.dataset.ssid;
+        let passw = passwordInput.value;
+        
+        const response = await fetch(`/connect?ssid=${encodeURIComponent(ssid)}&pass=${encodeURIComponent(passw)}`);
+        if (response.ok) {
+            alert(`Comando enviado! Tentando conectar ao SSID: ${ssid}`);
+        }
+    }
+});
+
+const wakeonHtmlForm = document.getElementById('wakeonHtmlForm');
+const webWakeUpInput = document.getElementById('web_wake_up_time');
+const webSleepInput = document.getElementById('web_sleep_time');
+
+// 1. Carrega as configurações salvas no SD assim que o painel abrir
+window.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const response = await fetch('/get-config');
+        if (response.ok) {
+            const config = await response.json();
+            if (config.wake_up_time) webWakeUpInput.value = config.wake_up_time;
+            if (config.sleep_time) webSleepInput.value = config.sleep_time;
+        }
+    } catch (err) {
+        console.error("Erro ao carregar configurações do SD:", err);
+    }
+});
+
+// 2. Envia as atualizações via POST dinâmico para salvamento e alteração imediata
+wakeonHtmlForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    
+    const payload = {
+        name: data.name || "Mochi C3", // Aproveita o objeto de dados existente
+        wake_up_time: webWakeUpInput.value,
+        sleep_time: webSleepInput.value
+    };
+
+    try {
+        const response = await fetch('/save-config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            alert("Configurações de Wakeon salvas com sucesso no Cartão SD!");
+        } else {
+            alert("Erro ao salvar dados no servidor.");
+        }
+    } catch (error) {
+        console.error("Erro na requisição HTTP POST:", error);
+        alert("Falha de comunicação com o ESP32.");
     }
 });

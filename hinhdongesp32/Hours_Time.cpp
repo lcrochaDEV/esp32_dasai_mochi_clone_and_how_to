@@ -1,5 +1,3 @@
-#include "time.h"
-
 #include "Hours_Time.h"
 
 Hours_Time::Hours_Time(const char* hours_sleep, const char* hours_wakeon, const char* date, long  gmtOffset_sec, int daylightOffset_sec, const char* ntpServer, Animations* animationPtr)
@@ -117,4 +115,5 @@ const char* Hours_Time::losttime() const {
         strftime(timeString, sizeof(timeString), "%d/%m/%Y %H:%M:%S", &timeinfo);
         return timeString;
     }
+    return "00/00/0000 00:00:00"; // Retorno de segurança
 }

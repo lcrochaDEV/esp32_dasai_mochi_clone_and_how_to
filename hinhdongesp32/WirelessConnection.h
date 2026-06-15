@@ -8,7 +8,7 @@
 #include "BTConnect.h"
 #include "Animations.h"
 
-class WirelessConnection: public WifiConnect, public BTConnect{
+class WirelessConnection: public WifiConnect {
   public:
     WirelessConnection (const char* ssid = nullptr, const char* password = nullptr, Animations* animationPtr = nullptr);
 };

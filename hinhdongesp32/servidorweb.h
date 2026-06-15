@@ -1,11 +1,19 @@
 #ifndef SERVIDORWEB_H
 #define SERVIDORWEB_H
 
-#include "SD.h"
-#include <WiFi.h>
-#include <AsyncTCP.h>
-#include <ESPAsyncWebServer.h>
+#include <Arduino.h>
 #include <ArduinoJson.h> // Instale a biblioteca ArduinoJson
+#if defined(ESP8266)
+  #include <ESPAsyncTCP.h>
+  #include <ESP8266WiFi.h>
+#elif defined(ESP32)
+  #include <AsyncTCP.h>
+  #include <WiFi.h>
+#endif
+
+#include "SD.h"
+
+#include <ESPAsyncWebServer.h>
 
 #include "WirelessConnection.h"
 extern WirelessConnection wirelessConnection;
@@ -26,7 +34,7 @@ void handleToggle(AsyncWebServerRequest *request);
 void handleDateTime(AsyncWebServerRequest *request);
 
 //Nova conexão
-String pendinSsid = "";
+String pendingSsid = "";
 String pendingPass = "";
 
 String getSwitchState(bool state) {
@@ -34,22 +42,16 @@ String getSwitchState(bool state) {
 }
 // Função de Processamento para substituir o marcador %STATE% no HTML
 String processor(const String& var){
-    Serial.print("Placeholder requisitado: "); Serial.println(var);
+    Serial.print("Placeholder requisitado: "); 
+    Serial.println(var);
 
     if(var == "WIFI_STATE") return getSwitchState(wifiState); // O HTML usa "checked" para ligar o switch
-    
     if(var == "BLUETOOTH_STATE") return getSwitchState(bluetoothState);
-
     if(var == "WEBSERVER_STATE") return getSwitchState(webserverState);
-
     if(var == "SSID_VALUE") return (WiFi.status() == WL_CONNECTED) ? WiFi.SSID() : "Desconectado"; // Retorna o SSID atual ou uma mensagem se desconectado
-    
-    if(var == "IP_VALUE") return (WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString() : "0.0.0.0"; // Retorna o IP local
-    
-    if(var == "MAC_VALUE") return WiFi.macAddress(); // Retorna o endereço MAC
-    
+    if(var == "IP_VALUE") return (WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString() : "0.0.0.0"; // Retorna o IP local   
+    if(var == "MAC_VALUE") return WiFi.macAddress(); // Retorna o endereço MAC    
     if(var == "WAKEON_DISPLAY") return String(hours_Time_exec.getHoursWakeon()); // Retorna o valor da função getHoursWakeon()
-    
     if(var == "SLEEP_DISPLAY") return String(hours_Time_exec.getHoursSleep()); // Retorna o valor da função getHoursSleep()
 
     // Para qualquer outro placeholder não mapeado
@@ -61,9 +63,7 @@ void handleToggle(AsyncWebServerRequest *request) {
     String param = "state";
     String value = "toggle";
 
-    if (request->hasParam(param)) {
-        value = request->getParam(param)->value();
-    }
+    if (request->hasParam(param)) value = request->getParam(param)->value();
 
     Serial.print("Comando de alternância recebido: ");
     Serial.println(value);
@@ -119,6 +119,12 @@ void handleDateTime(AsyncWebServerRequest *request) {
 }
 
 void startServer() {
+    // 1. CHECAGEM DE SEGURANÇA: O SD está montado?
+    // Se o SD não puder ler a raiz, não deixamos o código prosseguir para evitar o crash.
+    if (!SD.exists("/")) {
+        Serial.println("⚠️ [ERRO CRÍTICO] Servidor não iniciado: Cartão SD inacessível ou não formatado!");
+        return; 
+    }
     // Configuração de Rotas (Endpoints)
     server.serveStatic("/www/", SD, "/www/");
     // Rota raiz (/) - Lendo do SD

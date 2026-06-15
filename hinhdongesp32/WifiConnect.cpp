@@ -1,14 +1,4 @@
-#include "WString.h"
-#if defined(ESP8266)
-  #include <ESP8266WiFi.h>
-#elif defined(ESP32)
-  #include <WiFi.h>
-#endif
-
-#include "WirelessConnection.h"
 #include "WifiConnect.h"
-#include "Hours_Time.h"
-
 
 WifiConnect::WifiConnect(const char* ssid, const char* password, Animations* animationPtr)
   : ssid(ssid), password(password), wifiAnimationRef(animationPtr) {

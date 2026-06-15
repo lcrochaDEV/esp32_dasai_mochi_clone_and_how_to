@@ -1,12 +1,21 @@
 #ifndef WIFICONNECT_H
 #define WIFICONNECT_H
 
+#if defined(ESP8266)
+  #include <ESPAsyncTCP.h>
+  #include <ESP8266WiFi.h>
+#elif defined(ESP32)
+  #include <AsyncTCP.h>
+  #include <WiFi.h>
+#endif
 
 #include <Arduino.h>
 
-#include <WiFi.h>
 #include "Animations.h"
 #include "Hours_Time.h"
+
+
+
 
 class WifiConnect: public  Hours_Time{
   public:
