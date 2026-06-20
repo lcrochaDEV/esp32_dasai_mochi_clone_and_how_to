@@ -93,9 +93,9 @@ void Hours_Time::manual_turn_on() {
     if (getLocalTime(&timeinfo)) {
        char currentTimeStr[6]; // 3. Declara onde a string formatada será armazenada
         // 4. Formata a hora para a string (ex: de números para "18:00")
-        strftime(currentTimeStr, sizeof(currentTimeStr), "%H:%M", &timeinfo); 
+        strftime(currentTimeStr, sizeof(currentTimeStr), "%H:%M:%S", &timeinfo); 
         // 2. Verifica se estamos no período ATIVO (22:00 até 06:00)
-        if (strcmp(currentTimeStr, hours_sleep) >= 0 || strcmp(currentTimeStr, hours_wakeon) < 0) {
+        if (strncmp(currentTimeStr, hours_sleep, 5) >= 0 || strncmp(currentTimeStr, hours_wakeon, 5) < 0) {    
             // AÇÃO: Liga o display
             animationRef->control_oled_power(true);
             

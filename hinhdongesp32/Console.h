@@ -5,8 +5,9 @@
 
 #include "WirelessConnection.h"
 #include "SDData.h"
+#include "Animations.h"
 
-class Console: public WirelessConnection, public SDData {
+class Console: public WirelessConnection, public SDData, public Animations {
   public:
     Console(const char* consoleText = nullptr);
     //MENSAGEM DE TODO O PROGRAMA
