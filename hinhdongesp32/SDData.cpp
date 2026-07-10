@@ -52,7 +52,7 @@ bool SDData::createFolder(const char * path) {
 
 // Lista diretórios e arquivos no cartão SD
 void SDData::listDir(const char * dirname, uint8_t levels) {
-     Serial.println("\n------Dados do cartão SD-------------");
+    Serial.println("\n------Dados do cartão SD-------------");
     Serial.printf("Listando diretório: %s\n", dirname);
 
     File root = SD.open(dirname);
@@ -297,10 +297,48 @@ void SDData::deleteArquivo() {
     }
 }
 
-/*EXMPLO DP ARQUIVO .json
-  {
-    "usuario": "Admin",
-    "versao": 1.0,
-    "ativo": true
-  }
-*/
+
+// Metodo para ler uma animação local de contingência (ex: /data/fallback.json) gravada no mesmo formato do MongoDB.
+// Implemente este método no final do seu SDData.cpp
+
+bool SDData::readLocalFallbackFrame(int index, String& outHexData) {
+    // Abre o arquivo no caminho exato solicitado
+    File file = SD.open("/frames/wifi_frame/fallback.json", "r");
+    if (!file) {
+        Serial.println("[SDData] Erro: /frames/wifi_frame/fallback.json nao encontrado!");
+        return false;
+    }
+
+    // Aloca um tamanho seguro para o parser processar o documento do arquivo
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, file);
+    file.close(); // Fecha o arquivo assim que ler para liberar recursos do barramento SPI
+
+    if (error) {
+        Serial.printf("[SDData] Erro ao processar o JSON de Fallback: %s\n", error.c_str());
+        return false;
+    }
+
+    // Verifica se a estrutura esperada do MongoDB (que clonamos para o SD) existe
+    if (!doc["frames"].is<JsonArray>()) {
+        Serial.println("[SDData] Erro: Chave 'frames' invalida no arquivo fallback.");
+        return false;
+    }
+
+    JsonArray framesArray = doc["frames"].as<JsonArray>();
+    
+    // Procura o frame que bate com o 'frame_index' solicitado pelo loop
+    for (JsonObject frame : framesArray) {
+        int currentIdx = frame["frame_index"] | -1;
+        if (currentIdx == index) {
+            const char* hexStr = frame["data"] | nullptr;
+            if (hexStr) {
+                outHexData = String(hexStr);
+                return true;
+            }
+        }
+    }
+
+    // Se chegou até aqui, o índice solicitado não foi achado no JSON (ex: fim da animação)
+    return false; 
+}

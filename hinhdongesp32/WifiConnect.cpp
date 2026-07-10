@@ -2,19 +2,17 @@
 
 WifiConnect::WifiConnect(const char* ssid, const char* password, Animations* animationPtr)
   : ssid(ssid), password(password), wifiAnimationRef(animationPtr) {
-    // Variável para contar as tentativas
-    int maxTentativas;
-    int tentativaAtual;
-    bool ProcessoDeBackup;
   }
 
 void WifiConnect::connections_Wifi(){
-  // 1. Força a desconexão total para limpar o rádio
-  WiFi.disconnect(true);
-  delay(100);
-  //Serial.begin(115200);
+  // Força o reset completo do rádio do ESP32-C3 antes de iniciar
+  WiFi.disconnect(true, true);
+  WiFi.mode(WIFI_OFF);
+  delay(300); // Essencial para estabilizar o hardware e evitar falhas de rádio
+
   Serial.printf("Conectando a %s ", ssid);
   // Configura para reconectar automaticamente se cair
+  WiFi.mode(WIFI_STA);
   WiFi.persistent(false);
   WiFi.setAutoReconnect(true);
   WiFi.begin(ssid, password); // Inicia a conexão
@@ -24,15 +22,23 @@ void WifiConnect::connections_Wifi(){
 
   while (WiFi.status() != WL_CONNECTED) {// Aguarda a conexão ser estabelecida
     delay(500);
-    if (WiFi.status() == WL_CONNECTED) break;
+    // CRÍTICO PARA O ESP32-C3: Cede tempo para o processador lidar com a criptografia de fundo
+    yield();
+    if (WiFi.status() == WL_CONNECTED) {
+      // Guarda em RAM nas variáveis da classe
+      backupSsid = WiFi.SSID();
+      backupPass = WiFi.psk();
+      break;
+    }
     Serial.print(".");
 
-    if(tentativaAtual == maxTentativas){
-      wifiAnimationRef->not_wifi();
+    tentativaAtual++; // Incrementa o contador
+    
+  if(tentativaAtual >= maxTentativas){ // Corrigido para >= garantindo segurança no limite
+      //if (wifiAnimationRef) wifiAnimationRef->not_wifi();
       Serial.println("\nFalha ao conectar Wifi!");
       return;
     }
-    tentativaAtual++; // Incrementa o contador
   }
 }
 
@@ -45,7 +51,7 @@ void WifiConnect::backupRede() {
         ProcessoDeBackup = false; 
     } else {
         Serial.println("\n\n[OK] Conectado à rede principal!");
-        Serial.printf("SSID: %s", WiFi.SSID().c_str());
+        Serial.printf("SSID: %s\n", WiFi.SSID().c_str());
         Serial.printf("Endereco IP: %s\n", WiFi.localIP().toString().c_str());
         Serial.printf("Endereco MAC do Gateway %s\n", WiFi.macAddress().c_str()); // Anote este MAC para usar no codigo do Sender
         Serial.printf("Canal Wi-Fi atual: %d\n\n", WiFi.channel());
@@ -56,18 +62,20 @@ void WifiConnect::backupRede() {
 
   WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) {
     uint8_t motivo = info.wifi_sta_disconnected.reason;
-    if (ProcessoDeBackup) return; // Evita loop infinito se o backup também falhar
-      // Motivos comuns de falha (Senha errada, AP não encontrado, etc)
+    if (!ProcessoDeBackup && backupSsid.length() > 0) {
       if (motivo == 2 || motivo == 202 || motivo == 201) {
           Serial.printf("\n[Falha] Motivo %d. Tentando backup...", motivo);
           ProcessoDeBackup = true;
-          WiFi.disconnect(true, false); // Aborta a tentativa atual oficialmente
-          WiFi.setAutoReconnect(false); // 2. Opcional: Desativa o auto-reconnect temporariamente para não conflitar
-          // Usamos o begin para a rede de backup salva
-          WiFi.begin(backupSsid.c_str(), backupPass.c_str()); // 4. Reativa se desejar que o backup também tente se manter
+          WiFi.disconnect(true, false); 
+          WiFi.setAutoReconnect(false); 
+          WiFi.begin(backupSsid.c_str(), backupPass.c_str()); 
           WiFi.setAutoReconnect(true);
-        return;
+          return;
       }
+    } else if (backupSsid.length() == 0) {
+        // Se a rede principal caiu na primeira tentativa, avisa o motivo real
+        Serial.printf("\n[Falha de Autenticacao] Motivo %d. Verifique a senha!", motivo);
+    }
   }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 }
 
@@ -102,10 +110,10 @@ void WifiConnect::wifiOff(){
 
 void WifiConnect::searchRedes() {
   int n = WiFi.scanNetworks(); // Escaneia redes
-  Serial.printf("%d redes encontradas\n", n);
+  Serial.printf("\n%d redes encontradas\n", n);
 
   if (n == 0) {
-    Serial.println("Nenhuma rede encontrada.");
+    Serial.println("\nNenhuma rede encontrada.");
   } else {
     for (int i = 0; i < n; ++i) {
       Serial.printf("%d: %s (%d dBm) - Segurança: ", i + 1, WiFi.SSID(i).c_str(), WiFi.RSSI(i));

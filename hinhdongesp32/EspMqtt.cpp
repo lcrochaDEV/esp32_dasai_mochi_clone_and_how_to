@@ -13,7 +13,7 @@ void processarMensagemMqtt(char* topic, byte* payload, unsigned int length) {
     }
 
     // Verifica se o JSON tem as chaves necessárias
-    if (doc.containsKey("pino") && doc.containsKey("state")) {
+    if (!doc["pino"].isNull() && !doc["state"].isNull()) {
         int pino = doc["pino"];
         const char* status = doc["state"];
 

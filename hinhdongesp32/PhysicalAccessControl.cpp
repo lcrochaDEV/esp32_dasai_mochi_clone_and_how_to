@@ -40,8 +40,8 @@ String PhysicalAccessControl::sketch_Size() {
 
 // Retorna um JSON dinâmico com quantos GPIOs cada placa tiver
 String PhysicalAccessControl::pinGPIO() {
-  StaticJsonDocument<512> doc;
-  JsonObject gpios = doc.createNestedObject("gpios");
+  JsonDocument doc;
+  JsonObject gpios = doc["gpios"].to<JsonObject>();
 
   #if defined(ESP8266)
     // Configuração para módulos menores ou NodeMCU

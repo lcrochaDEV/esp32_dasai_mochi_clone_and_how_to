@@ -78,6 +78,7 @@ void Animations::not_wifi(){
   setFrameData(not_connet);
 }
 
+// COMANDO LIGA E DESLIGA TELA.
 void Animations::control_oled_power(bool enable) {
     if (enable) {
         // LIGA o display (sai do modo de suspensão)
@@ -92,4 +93,59 @@ void Animations::control_oled_power(bool enable) {
         display.display();
         Serial.println("Display OLED DESLIGADO (Sleep Mode).");
     }
+}
+
+void Animations::drawHexFrame(const char* hexData) {
+    if (hexData != nullptr) {
+        _currentHexData = String(hexData);
+        _newFrameAvailable = true;
+    }
+}
+
+void Animations::processHexFrameLoop() {
+    // 1. Só processa se houver um frame novo vindo do WebSocket
+    if (!_newFrameAvailable) return;
+    _newFrameAvailable = false; 
+
+    size_t hexLength = _currentHexData.length();
+    if (hexLength == 0) return;
+
+    // Garante que usaremos o espaço exato de 1024 bytes (2048 caracteres hex)
+    uint8_t buffer[1024];
+    memset(buffer, 0, sizeof(buffer)); // Zera a tela inteira (fundo preto)
+
+    const char* hexDataPtr = _currentHexData.c_str();
+
+    // Lambda para converter caracteres hexadecimais em numeração real
+    auto charToNibble = [](char c) -> uint8_t {
+        if (c >= '0' && c <= '9') return c - '0';
+        if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+        if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+        return 0;
+    };
+
+    // Determina quantos bytes foram recebidos de fato (limita ao tamanho físico da tela)
+    size_t bytesDisponiveis = hexLength / 2;
+    if (bytesDisponiveis > 1024) bytesDisponiveis = 1024;
+
+    // 2. Reconstrói o mapa de bits exatamente na ordem sequencial horizontal do .h
+    for (size_t i = 0; i < bytesDisponiveis; i++) {
+        char highChar = hexDataPtr[i * 2];
+        char lowChar  = hexDataPtr[(i * 2) + 1];
+
+        uint8_t highNibble = charToNibble(highChar);
+        uint8_t lowNibble  = charToNibble(lowChar);
+
+        // Mescla os nibbles para recriar o byte original (ex: 0x01, 0xFF)
+        buffer[i] = (highNibble << 4) | lowNibble;
+    }
+
+    // 3. Atualiza e renderiza a tela OLED de forma horizontal (128x64)
+    display.clearDisplay();
+    
+    // Passamos o buffer linear reconstruído diretamente para a função drawBitmap da Adafruit.
+    // Como a string do Mongo seguiu o padrão de linhas do seu .h, o alinhamento ficará perfeito.
+    display.drawBitmap(0, 0, buffer, SCREEN_WIDTH, SCREEN_HEIGHT, SSD1306_WHITE);
+    
+    display.display();
 }

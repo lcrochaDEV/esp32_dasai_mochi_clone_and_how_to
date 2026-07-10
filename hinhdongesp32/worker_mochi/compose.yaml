@@ -1,0 +1,29 @@
+services:
+  fastapi-app_mochi:
+    image: fastapi_celery_example_web
+    container_name: worker_mochi
+    hostname: worker_mochi
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - ./data:/data
+    ports:
+      - "8003:8000"
+    restart: always
+
+  mongodb:
+    image: mongo:7.0
+    container_name: mongoDB
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    volumes:
+      - mongo_data:/data/db
+    restart: always
+
+volumes:
+  mongo_data:

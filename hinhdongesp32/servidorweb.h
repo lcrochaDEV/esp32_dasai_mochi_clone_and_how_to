@@ -255,7 +255,7 @@ void startServer() {
             // 1. Sincronização do estado físico dos Pinos
             if(doc["pins"].is<JsonArray>()){
                 for (JsonObject p : doc["pins"].as<JsonArray>()) {
-                    if (p.containsKey("pin")) {
+                    if (!p["pin"].isNull()) {
                         p["state"] = digitalRead(p["pin"].as<int>());
                     }
                 }
@@ -304,13 +304,13 @@ void startServer() {
         if (error) return request->send(400);
 
         // 1. Geração de UUID consistente
-        if (!doc.containsKey("uuid")) {
+        if (doc["uuid"].isNull()) {
             uuid.generate();
             doc["uuid"] = (char*)uuid.toCharArray(); 
         }
 
         // 2. Validação de campo obrigatório
-        if (doc.containsKey("broker")) {
+        if (!doc["broker"].isNull()) {
             
             // EXECUÇÃO ÚNICA: Tenta salvar e verifica o retorno booleano
             if (accessSys.saveMqttFullConfig(doc.as<JsonObject>())) {
@@ -359,7 +359,7 @@ void startServer() {
         DeserializationError error = deserializeJson(doc, buffer.data(), buffer.size());
         std::vector<uint8_t>().swap(buffer);
 
-        if (error || !doc.containsKey("uuid")) return request->send(400, "application/json", "{\"error\":\"UUID obrigatorio\"}");
+        if (error || doc["uuid"].isNull()) return request->send(400, "application/json", "{\"error\":\"UUID obrigatorio\"}");
 
         const char* targetUuid = doc["uuid"];
 
@@ -412,7 +412,7 @@ void startServer() {
         DeserializationError error = deserializeJson(doc, buffer.data(), buffer.size());
         std::vector<uint8_t>().swap(buffer);
 
-        if (error || !doc.containsKey("uuid")) {
+        if (error || doc["uuid"].isNull()) {
             return request->send(400, "application/json", "{\"error\":\"UUID obrigatorio\"}");
         }
 
@@ -424,7 +424,7 @@ void startServer() {
             bool restouAlgumAtivo = false;
 
             if (accessSys.loadConfig(fullConfig)) {
-                if (fullConfig.containsKey("mqtt") && fullConfig["mqtt"].is<JsonArray>()) {
+                if (fullConfig["mqtt"].is<JsonArray>()) {
                     for (JsonObject item : fullConfig["mqtt"].as<JsonArray>()) {
                         if (item["active"] == true) {
                             restouAlgumAtivo = true;

@@ -28,6 +28,8 @@ class SDData {
 
     // Método para imprimir o JSON formatado no Monitor Serial
     void printJSON();
+    // Metodo para ler uma animação local de contingência (ex: /data/fallback.json) gravada no mesmo formato do MongoDB.
+    bool readLocalFallbackFrame(int index, String& outHexData);
 
   protected:
     const char* filename;

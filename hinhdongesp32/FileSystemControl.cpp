@@ -215,7 +215,7 @@ int FileSystemControl::getLinkedPin(int originPin) {
     if (doc["pins"].is<JsonArray>()) {
         JsonArray pins = doc["pins"].as<JsonArray>();
         for (JsonObject p : pins) {
-            if (p.containsKey("vincularpin") && p["vincularpin"].as<int>() == originPin) {
+            if (p["vincularpin"].is<int>() && p["vincularpin"].as<int>() == originPin) {
                 return p["pin"].as<int>();
             }
         }
@@ -235,7 +235,7 @@ void FileSystemControl::runMirroring() {
     bool mudancaDetectada = false;
 
     for (JsonObject pinoEscravo : pins) {
-        int vPin = pinoEscravo.containsKey("vincularpin") ? pinoEscravo["vincularpin"].as<int>() : -1;
+        int vPin = pinoEscravo["vincularpin"].is<int>() ? pinoEscravo["vincularpin"].as<int>() : -1;
 
         if (vPin != -1) {
             for (JsonObject pinoMestre : pins) {

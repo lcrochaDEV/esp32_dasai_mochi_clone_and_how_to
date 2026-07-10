@@ -16,6 +16,10 @@ Animations animations_exec;
 #include "SDData.h"
 SDData SDData_exec;
 
+#include "MochiWebSocketClient.h" // Inclui a classe cliente criada para o MochiDB
+// Instancia o cliente WebSocket passando a referência da tela
+MochiWebSocketClient wsClient(&animations_exec);
+
 const char* SSID = "PERIGO";
 const char* PASSWORD = "LIBER@RWIFI";
 
@@ -24,7 +28,7 @@ WirelessConnection wirelessConnection = WirelessConnection(SSID, PASSWORD, &anim
 void startWifi() {
   wirelessConnection.backupRede();
   wirelessConnection.connections_Wifi();  // CONNECT WIFI
-  wirelessConnection.searchRedes();       //SCAN WIFI REDE
+  wirelessConnection.searchRedes();       // SCAN WIFI REDE
   //wirelessConnection.connections_status();
   //wirelessConnection.btClassicScan();
 }
@@ -35,19 +39,35 @@ void setup() {
   // Inicialização física do Cartão SD e listagem
   SDData_exec.sdbegin();
   SDData_exec.listDir("/", 1);
-  animations_exec.helloWordMochi();  // Inicializa a tela com o Hello Word do seu Mochi
-  startWifi(); // Gerencia as conexões de rádio
-  hours_Time_exec.time_server();  // Configurações de hora baseadas no NTP Server
-  wirelessConnection.Uptime();    // ALARMES DE QUEDAS UP/DOWN
-  startServer();                 // Inicializa o servidor HTTP assíncrono (método do servidorweb.h)
+  animations_exec.helloWordMochi();                         // Inicializa a tela com o Hello Word do seu Mochi
+  startWifi();                                              // Gerencia as conexões de rádio
+  hours_Time_exec.time_server();                            // Configurações de hora baseadas no NTP Server
+  wirelessConnection.Uptime();                              // ALARMES DE QUEDAS UP/DOWN
+  startServer();                                            // Inicializa o servidor HTTP assíncrono (método do servidorweb.h)
+  wsClient.begin("192.168.1.252", 8003, "/ws/animations");  // CONECTA AO SEU BACKEND DO MOCHIDB (Ajuste o IP e a porta se necessário)
   console.helloWord(); //CONSOLE
 }
 
 void loop() {
-  animations_exec.animationsLoop();
-  hours_Time_exec.weke_on();
+  //animations_exec.animationsLoop();
+  //hours_Time_exec.weke_on();
   //CONSOLE
+  //console.consoleView();
+  //delay(1);
+
+  // Se o Wi-Fi estiver conectado, escuta as strings do MochiDB e processa na tela
+  if (WiFi.status() == WL_CONNECTED) {
+      wsClient.loop();
+      wsClient.verificarFluxoDados();
+      animations_exec.processHexFrameLoop(); // Renderiza o frame Hex recebido do Mongo
+  } else {
+      // Se não houver internet/servidor, roda a animação padrão local em loop
+      animations_exec.animationsLoop();
+  }
+  
+  hours_Time_exec.weke_on();
   console.consoleView();
-  delay(1);
+  
+  delay(1); // Respiro essencial para o núcleo do ESP32-C3
 }
 
