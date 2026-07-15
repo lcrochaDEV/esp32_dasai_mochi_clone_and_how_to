@@ -9,7 +9,9 @@ class Animations {
     Animations();
     void helloWordMochi(String consoleText = "Hello Mochi");
     void animationsLoop();
-    void not_wifi();
+    void not_wifi(); //Amimation
+    void noworker(); //Amimation
+    void bugframe(); //Amimation
     void control_oled_power(bool enable);
     
     void processHexFrameLoop(); 
@@ -19,7 +21,7 @@ class Animations {
     void setFrameData(const unsigned char* frameData[]);
     String animations;
 
-    String _currentHexData = "";      // Guarda a última string de frame recebida
+    char _currentHexData[2050];     // Guarda a última string de frame recebida
     bool _newFrameAvailable = false;  // Flag para saber se há frame novo para desenhar
     unsigned long _lastHexFrameTime = 0; // Controle do tempo via millis
 

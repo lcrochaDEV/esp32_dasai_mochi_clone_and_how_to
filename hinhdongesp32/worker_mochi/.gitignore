@@ -6,3 +6,6 @@ venv/
 .DS_Store
 dist/
 build/
+env/
+c++_gif/
+data/

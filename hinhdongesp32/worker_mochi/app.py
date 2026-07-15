@@ -1,16 +1,14 @@
-# worker.py
-
 import asyncio
 import logging
 from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-
-# Configuração de Logs para monitorizares o streaming no terminal
+from fastapi import FastAPI, Query
+# Configuração de Logs
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Mochi Animation Worker")
+app = FastAPI(title="Mochi Animation Worker v2.1")
 
 origins = [
     "http://localhost",
@@ -29,7 +27,6 @@ app.add_middleware(
 # -------------------------------------------------------------------------
 # CONFIGURAÇÕES DO BANCO DE DADOS (MONGODB)
 # -------------------------------------------------------------------------
-# Se usares o MongoDB Atlas ou autenticação, altera a URI abaixo
 MONGO_URI = "mongodb://admin:admin@192.168.1.252:27017/?authSource=admin"
 DB_NAME = "MochiDB"
 COLLECTION_NAME = "mochi_animations"
@@ -38,22 +35,59 @@ client = AsyncIOMotorClient(MONGO_URI)
 db = client[DB_NAME]
 collection = db[COLLECTION_NAME]
 
-# Gerenciador de conexões WebSocket ativas (Neste caso, o teu ESP32 Mochi)
+# Gerenciador de conexões WebSocket ativas
 active_connections: set[WebSocket] = set()
 
-# Variável de controle para sabermos qual o tipo de interação atual que deve rodar
-current_interaction_type = "connection_status" 
+# Categoria padrão do sistema. Vai rodar aleatoriamente entre as cadastradas com este type.
+current_interaction_type = "animation" 
 
 # -------------------------------------------------------------------------
-# LOOP PRINCIPAL DO WORKER (REPRODUTOR DE ANIMAÇÕES)
+# NOVO ENDPOINT PARA MUDAR A CATEGORIA DINAMICAMENTE
+# -------------------------------------------------------------------------
+@app.post("/set-category")
+async def set_category(category: str = Query(..., description="O nome do 'type' da animação desejada")):
+    """
+    Endpoint HTTP para alterar a categoria atual de animações em tempo real.
+    Exemplo de chamada: POST http://localhost:8000/set-category?category=happy
+    """
+    global current_interaction_type
+    
+    # Validação simples: checa se existe pelo menos uma animação com esse tipo no banco
+    exists = await collection.find_one({"type": category})
+    if not exists:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Categoria '{category}' não encontrada ou não possui nenhuma animação cadastrada."
+        )
+    
+    # Atualiza a variável global sem parar o Worker
+    old_category = current_interaction_type
+    current_interaction_type = category
+    
+    logger.info(f"Categoria alterada via API: '{old_category}' -> '{current_interaction_type}'")
+    return {
+        "status": "sucesso",
+        "categoria_anterior": old_category,
+        "nova_categoria": current_interaction_type,
+        "mensagem": "A troca ocorrerá assim que a animação atual terminar."
+    }
+
+# Endpoint auxiliar para você consultar qual categoria está ativa no momento
+@app.get("/current-category")
+def get_current_category():
+    global current_interaction_type
+    return {"current_interaction_type": current_interaction_type}
+
+# -------------------------------------------------------------------------
+# LOOP PRINCIPAL DO WORKER (REPRODUTOR ALEATÓRIO)1
 # -------------------------------------------------------------------------
 async def animation_streamer_loop():
     """
-    Loop assíncrono perpétuo que dita o ritmo (FPS) e envia as strings hexadecimais
-    dos frames uma a uma diretamente para a tela física do Mochi.
+    Loop perpétuo que busca animações aleatórias baseadas na categoria (type) atual
+    e transmite seus frames para o hardware conectado.
     """
     global current_interaction_type
-    logger.info("Worker de Streaming de Animações iniciado com sucesso!")
+    logger.info("Worker de Streaming de Animações Aleatórias iniciado!")
 
     while True:
         # Se não houver nenhum hardware conectado, espera um pouco e pula o ciclo
@@ -62,36 +96,50 @@ async def animation_streamer_loop():
             continue
 
         try:
-            # 1. Procura no MongoDB a animação ativa com base no tipo de interação atual
-            animation = await collection.find_one({"type": current_interaction_type})
+            # 1. Pipeline de Agregação para buscar 1 animação aleatória filtrada pelo 'type' atual
+            pipeline = [
+                {"$match": {"type": current_interaction_type}},
+                {"$sample": {"size": 1}}
+            ]
+            
+            cursor = collection.aggregate(pipeline)
+            animations = await cursor.to_list(length=1)
 
-            if not animation or "frames" not in animation or len(animation["frames"]) == 0:
-                logger.warning(f"Nenhuma animação cadastrada para o tipo: '{current_interaction_type}'")
+            if not animations:
+                logger.warning(f"Nenhuma animação encontrada para a categoria: '{current_interaction_type}'")
                 await asyncio.sleep(2)
                 continue
 
-            logger.info(f"Transmitindo a animação: '{animation.get('name')}' ({len(animation['frames'])} frames)")
+            animation = animations[0]
+            frames = animation.get("frames", [])
 
-            # 2. Varre os frames da animação passados um a um
-            for frame in animation["frames"]:
-                # Se todos os clientes desconectarem no meio da animação, interrompe
+            if not frames:
+                logger.warning(f"A animação '{animation.get('name')}' foi sorteada mas não possui frames válidos.")
+                await asyncio.sleep(1)
+                continue
+
+            logger.info(f"[Sorteada] Transmitindo: '{animation.get('name')}' (Categoria: {current_interaction_type}) - {len(frames)} frames")
+
+            # 2. Varre os frames da animação sorteada
+            for frame in frames:
+                # Se o hardware desconectar no meio da transmissão, interrompe imediatamente
                 if not active_connections:
                     break
 
                 hex_frame_data = str(frame.get("data", "")).strip()
                 
                 if hex_frame_data:
-                    # Cria uma lista de tarefas para disparar o frame para todos os dispositivos conectados
-                    # Enviamos a string hex PURA, poupando a RAM e processamento do ESP32!
                     send_tasks = [
                         connection.send_text(hex_frame_data) 
                         for connection in active_connections
                     ]
                     await asyncio.gather(*send_tasks, return_exceptions=True)
 
-                # 3. CONTROLE DE FRAME RATE (FPS) NO SERVIDOR
-                # 0.042 segundos de delay garante uma taxa cravada em aproximadamente ~24 FPS na tela física
-                await asyncio.sleep(0.042)
+                # Controle de Frame Rate (~24 FPS)
+                await asyncio.sleep(0.080)
+
+            # Pequeno intervalo opcional entre o fim de uma animação e o sorteio da próxima
+            await asyncio.sleep(0.1)
 
         except Exception as e:
             logger.error(f"Erro crítico no loop do Worker: {e}")
@@ -100,7 +148,7 @@ async def animation_streamer_loop():
 
 @app.get("/")
 def methodGet():
-   return {"API Mochi está operacional"}
+   return {"status": "API Mochi v2 está operacional e rodando em modo aleatório"}
 
 # -------------------------------------------------------------------------
 # ENDPOINT WEBSOCKET PARA O ESP32 SE CONECTAR
@@ -113,14 +161,16 @@ async def websocket_endpoint(websocket: WebSocket):
     
     try:
         while True:
-            # Mantém a conexão aberta escutando mensagens do Mochi (caso queiras enviar telemetria)
             data = await websocket.receive_text()
             logger.info(f"Mensagem recebida do Mochi: {data}")
             
-            # Exemplo: Se o Mochi mandar um comando de texto, podes mudar a animação dinamicamente
-            # if "change_state:" in data:
-            #     global current_interaction_type
-            #     current_interaction_type = data.split(":")[1]
+            # Dinâmico: Se o Mochi ou uma rota de controle enviar "change_type:happy",
+            # o loop passará a sortear aleatoriamente apenas animações do tipo "happy"
+            if "change_type:" in data:
+                global current_interaction_type
+                novo_tipo = data.split(":")[1].strip()
+                current_interaction_type = novo_tipo
+                logger.info(f"Categoria de animação alterada para: {current_interaction_type}")
 
     except WebSocketDisconnect:
         active_connections.remove(websocket)
@@ -131,17 +181,14 @@ async def websocket_endpoint(websocket: WebSocket):
         logger.error(f"Erro na conexão WebSocket: {e}")
 
 # -------------------------------------------------------------------------
-# GATILHO DE INICIALIZAÇÃO DO TRABALHO EM SEGUNDO PLANO
+# GATILHO DE INICIALIZAÇÃO
 # -------------------------------------------------------------------------
 @app.on_event("startup")
 async def startup_event():
-    # Registra o Loop do Worker para rodar de forma assíncrona em background,
-    # permitindo que o servidor WebSocket gerencie conexões sem travar.
     asyncio.create_task(animation_streamer_loop())
 
 
-# Para rodar este arquivo, instala as dependências:
-# pip install fastapi uvicorn motor pymongo
-#
-# E executa no terminal:
-# uvicorn worker:app --host 0.0.0.0 --port 8000 --reload
+'''
+# Bash
+curl -X POST "http://localhost:8000/set-category?category=happy"
+'''

@@ -1,10 +1,21 @@
 #!/bin/bash
 
+# ==============================================================================
+# GARANTIA DE PRIVILÉGIOS (SUDO)
+# ==============================================================================
+if [ "$EUID" -ne 0 ]; then
+    echo "Este script precisa ser executado como root/sudo."
+    echo "Reiniciando com permissões elevadas..."
+    exec sudo "$0" "$@"
+fi
+
+
 # Configurações herdadas
 ENV_PATH="env"
 DB_CONTAINER="postgres_db"
 CACHE_CONTAINER="memcached_server"
 LISTA_NODE="dependencies.txt"
+DB_MONGODB="mongoDB"
 
 # Códigos de Cor ANSI para o Git Status
 VERMELHO='\033[31m' # Repositório "sujo"
@@ -74,7 +85,7 @@ limpar_portas() {
     echo "Limpando processos na porta $PORTA_FINAL..."
     
     if [ $EUID -ne 0 ] && command -v sudo >/dev/null 2>&1; then
-        sudo fuser -k "$PORTA_FINAL/tcp" && echo "Porta $PORTA_FINAL liberada." || echo "Nenhum processo encontrado na porta $PORTA_FINAL."
+        fuser -k "$PORTA_FINAL/tcp" && echo "Porta $PORTA_FINAL liberada." || echo "Nenhum processo encontrado na porta $PORTA_FINAL."
     else
         fuser -k "$PORTA_FINAL/tcp" && echo "Porta $PORTA_FINAL liberada." || echo "Nenhum processo encontrado na porta $PORTA_FINAL."
     fi
@@ -125,7 +136,7 @@ preparar_env() {
     criar_arquivos_base
     if [ ! -d "$ENV_PATH" ]; then
         echo "Criando ambiente virtual ($ENV_PATH)..."
-        python3 -m env $ENV_PATH
+        python3 -m venv $ENV_PATH
     fi
 }
 
@@ -152,9 +163,10 @@ menu_python() {
         echo "7) Criar Arquivos Base (.ignore, .env, README)"
         echo "8) Liberar Porta TCP"
         echo "9) Verificar PushGit (Status Subpastas)"
-        echo "10) Sair/Voltar"
+        echo "10) Acessar Terminal MongoDB (Docker)"
+        echo "11) Sair/Voltar"
         echo "=========================================="
-        read -p "Escolha uma opção [1-10]: " OPCAO
+        read -p "Escolha uma opção [1-11]: " OPCAO
 
         case $OPCAO in
             1)
@@ -200,7 +212,15 @@ menu_python() {
             7) criar_arquivos_base; echo "Arquivos base verificados/criados." ;;
             8) limpar_portas ;;
             9) verificar_push_git ;;
-            10) exit 0 ;;
+            10) 
+                if [ "$(docker ps -q -f name=^/${DB_MONGODB}$)" ]; then 
+                    echo "Conectando ao MongoDB no container $DB_MONGODB..." 
+                    docker exec -it "$DB_MONGODB" mongosh -u admin -p admin
+                else 
+                    echo "ERRO: O container '$DB_MONGODB' não está rodando!" 
+                fi 
+                ;;
+            11) exit 0 ;;
             *) echo "Opção inválida." ;;
         esac
     done
@@ -220,7 +240,8 @@ menu_node() {
         echo "6) Criar Arquivos Base (.ignore, .env, README)"
         echo "7) Liberar Porta TCP"
         echo "8) Verificar PushGit (Status Subpastas)"
-        echo "9) Sair/Voltar"
+        echo "9) Acessar Terminal MongoDB (Docker)"
+        echo "10) Sair/Voltar"
         echo "=========================================="
         read -p "Escolha uma opção [1-9]: " opcao
         
@@ -254,7 +275,15 @@ menu_node() {
             6) criar_arquivos_base; echo "Arquivos base verificados/criados." ;;
             7) limpar_portas ;;
             8) verificar_push_git ;;
-            9) exit 0 ;;
+            9) 
+                if [ "$(docker ps -q -f name=^/${DB_MONGODB}$)" ]; then 
+                    echo "Conectando ao MongoDB no container $DB_MONGODB..." 
+                    docker exec -it "$DB_MONGODB" mongosh -u admin -p admin
+                else 
+                    echo "ERRO: O container '$DB_MONGODB' não está rodando!" 
+                fi 
+                ;;
+            10) exit 0 ;;
             *) echo "Opção inválida!" ;;
         esac
     done

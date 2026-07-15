@@ -6,8 +6,9 @@
 #include "WirelessConnection.h"
 #include "SDData.h"
 #include "Animations.h"
+#include "MochiWebSocketClient.h"
 
-class Console: public WirelessConnection, public SDData, public Animations {
+class Console: public WirelessConnection, public SDData, public Animations, public MochiWebSocketClient {
   public:
     Console(const char* consoleText = nullptr);
     //MENSAGEM DE TODO O PROGRAMA

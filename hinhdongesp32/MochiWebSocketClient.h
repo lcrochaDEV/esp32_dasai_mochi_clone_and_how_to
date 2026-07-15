@@ -12,7 +12,7 @@ class MochiWebSocketClient {
     void loop();
     void verificarFluxoDados();
     void processarPayloadAnimacao(const char* payloadStr);
-    
+    void testarConexaoWS();
   private:
     WebSocketsClient webSocket;
     Animations* _animations;

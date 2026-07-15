@@ -1,7 +1,7 @@
 #include "Console.h"
 
 Console::Console(const char* consoleText) 
-  : WirelessConnection(), SDData(), Animations(), _consoleText(consoleText) 
+  : WirelessConnection(), SDData(), Animations(), MochiWebSocketClient(this), _consoleText(consoleText) 
 {}
 
 void Console::helloWord(const char* consoleText) {
@@ -50,6 +50,10 @@ void Console::commands_envio(const String& command) {
   
   //ANIMAÇÃO
   else if(command == "ANIMACAO") animationsLoop();
+  
+  //WORKER SERVER TESTE
+  //else if(command == "WORKER STATUS") executarTesteConexao();
+
 
   else menssageViewMsg("Comando inexistente. Digite HELP.");
   menssageViewMsg(_consoleText);

@@ -4,40 +4,60 @@ WifiConnect::WifiConnect(const char* ssid, const char* password, Animations* ani
   : ssid(ssid), password(password), wifiAnimationRef(animationPtr) {
   }
 
-void WifiConnect::connections_Wifi(){
-  // Força o reset completo do rádio do ESP32-C3 antes de iniciar
+void WifiConnect::connections_Wifi() {
+
+   // -------------------------------------------------------------------------
+  // PASSO 1: Reset e Estabilização do rádio
+  // -------------------------------------------------------------------------
+  // Desconecta de redes anteriores e limpa as configurações salvas na memória flash
   WiFi.disconnect(true, true);
   WiFi.mode(WIFI_OFF);
-  delay(300); // Essencial para estabilizar o hardware e evitar falhas de rádio
+  delay(300); // Aguarda 300ms. Essencial para o chip C3 estabilizar o rádio físico
 
   Serial.printf("Conectando a %s ", ssid);
-  // Configura para reconectar automaticamente se cair
-  WiFi.mode(WIFI_STA);
-  WiFi.persistent(false);
-  WiFi.setAutoReconnect(true);
-  WiFi.begin(ssid, password); // Inicia a conexão
 
-  // Reinicia contador para nova tentativa
+  // -------------------------------------------------------------------------
+  // PASSO 2: Configuração do Modo Estação (STA)
+  // -------------------------------------------------------------------------
+  WiFi.mode(WIFI_STA);         // Configura o ESP32 como cliente Wi-Fi (Estação)
+  WiFi.persistent(false);      // Evita o desgaste da memória Flash gravando dados toda hora
+  WiFi.setAutoReconnect(true); // Diz ao Core do ESP32 para reconectar sozinho caso o sinal caia
+  WiFi.begin(ssid, password);  // Dispara a tentativa de conexão em segundo plano
+
+  // Reinicia o contador da classe para esta nova tentativa
   tentativaAtual = 0;
 
-  while (WiFi.status() != WL_CONNECTED) {// Aguarda a conexão ser estabelecida
-    delay(500);
-    // CRÍTICO PARA O ESP32-C3: Cede tempo para o processador lidar com a criptografia de fundo
+  // -------------------------------------------------------------------------
+  // PASSO 3: Loop de Aguardo (Polling com limite de tentativas)
+  // -------------------------------------------------------------------------
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500); // Aguarda meio segundo entre as verificações
+    
+    // Alimenta o Watchdog do ESP32-C3. Dá tempo para o processador processar 
+    // os pacotes de segurança (WPA2/WPA3) no background sem travar o chip.
     yield();
+    
+    Serial.print(".");
+
+    tentativaAtual++; // Incrementa o contador
+    
+    if (tentativaAtual >= maxTentativas) { 
+      // Se excedeu o limite (ex: 20 tentativas de 500ms = 10 segundos), cancela
+      // Se quiser avisar o Mochi que está sem internet para ele mudar a animação da tela:
+      if (wifiAnimationRef) wifiAnimationRef->not_wifi(); 
+      Serial.println("\nFalha ao conectar Wifi!");
+      return; // Sai da função imediatamente
+    }
+
+  // -------------------------------------------------------------------------
+  // PASSO 4: Sucesso na Conexão & Backup
+  // -------------------------------------------------------------------------
+  // Se o fluxo saiu do 'while', significa que WiFi.status() virou WL_CONNECTED
     if (WiFi.status() == WL_CONNECTED) {
       // Guarda em RAM nas variáveis da classe
       backupSsid = WiFi.SSID();
       backupPass = WiFi.psk();
       break;
-    }
-    Serial.print(".");
-
-    tentativaAtual++; // Incrementa o contador
-    
-  if(tentativaAtual >= maxTentativas){ // Corrigido para >= garantindo segurança no limite
-      //if (wifiAnimationRef) wifiAnimationRef->not_wifi();
-      Serial.println("\nFalha ao conectar Wifi!");
-      return;
     }
   }
 }

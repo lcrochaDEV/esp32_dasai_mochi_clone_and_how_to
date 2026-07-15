@@ -7,6 +7,7 @@ $ENV_PATH = "env"
 $DB_CONTAINER = "postgres_db"
 $CACHE_CONTAINER = "memcached_server"
 $LISTA_NODE = "dependencies.txt"
+$DB_MONGODB = "mongoDB"
 
 # Códigos de Cor ANSI para o terminal
 $VERMELHO = "$([char]0x1b)[31m"
@@ -115,7 +116,7 @@ function Preparar-env {
     Criar-ArquivosBase
     if (-not (Test-Path $ENV_PATH)) {
         Write-Host "Criando ambiente virtual ($ENV_PATH)..."
-        python -m env $ENV_PATH
+        python -m venv $ENV_PATH
     }
 }
 
@@ -143,9 +144,10 @@ function Menu-Python {
         Write-Host "7) Criar Arquivos Base (.ignore, .env, README)"
         Write-Host "8) Liberar Porta TCP"
         Write-Host "9) Verificar PushGit (Status Subpastas)"
-        Write-Host "10) Sair/Voltar"
+        Write-Host "10) Acessar Terminal MongoDB (Docker)"
+        Write-Host "11) Sair/Voltar"
         Write-Host "=========================================="
-        $opcao = Read-Host "Escolha uma opção [1-10]"
+        $opcao = Read-Host "Escolha uma opção [1-11]"
 
         switch ($opcao) {
             "1" {
@@ -190,7 +192,16 @@ function Menu-Python {
             "7" { Criar-ArquivosBase; Write-Host "Arquivos base verificados/criados." }
             "8" { Limpar-Portas }
             "9" { Verificar-PushGit }
-            "10" { exit }
+            "10"{
+               
+                if (docker ps -q -f name=$DB_MONGODB) {
+                    Write-Host "Conectando ao MongoDB no container $DB_MONGODB..."
+                    docker exec -it $DB_MONGODB mongosh -u admin -p admin
+                } else {
+                    Write-Host "ERRO: O container '$DB_MONGODB' não está rodando!" -ForegroundColor Red
+                }
+            }
+            "11" { exit }
         }
     } while ($opcao -ne "10")
 }
@@ -209,7 +220,8 @@ function Menu-Node {
         Write-Host "6) Criar Arquivos Base (.ignore, .env, README)"
         Write-Host "7) Liberar Porta TCP"
         Write-Host "8) Verificar PushGit (Status Subpastas)"
-        Write-Host "9) Sair/Voltar"
+        Write-Host "9) Acessar Terminal MongoDB (Docker)"
+        Write-Host "10) Sair/Voltar"
         Write-Host "=========================================="
         $opcao = Read-Host "Escolha uma opção [1-9]"
 
@@ -242,7 +254,16 @@ function Menu-Node {
             "6" { Criar-ArquivosBase; Write-Host "Arquivos base verificados/criados." }
             "7" { Limpar-Portas }
             "8" { Verificar-PushGit }
-            "9" { exit }
+            "9"{
+               
+                if (docker ps -q -f name=$DB_MONGODB) {
+                    Write-Host "Conectando ao MongoDB no container $DB_MONGODB..."
+                    docker exec -it $DB_MONGODB mongosh -u admin -p admin
+                } else {
+                    Write-Host "ERRO: O container '$DB_MONGODB' não está rodando!" -ForegroundColor Red
+                }
+            }
+            "10" { exit }
         }
     } while ($opcao -ne "9")
 }

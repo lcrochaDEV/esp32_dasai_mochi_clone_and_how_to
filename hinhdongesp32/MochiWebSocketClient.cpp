@@ -34,11 +34,8 @@ void MochiWebSocketClient::verificarFluxoDados() {
         // 1. O cronômetro controla apenas o log do console para não travar a CPU
         if (millis() - ultimoPrintAviso > 3000) { 
             ultimoPrintAviso = millis();
-            if (!webSocket.isConnected()) {
-                Serial.println("[WS STATUS] 📡 Desconectado do servidor. Rodando animação local...");
-            } else {
-                Serial.printf("[WS INFORMAÇÃO] ⏱️ Conectado, mas sem strings de animação há %lu ms!\n", tempoSemDados);
-            }
+            if (!webSocket.isConnected()) Serial.println("[WS STATUS] 📡 Desconectado do servidor. Rodando animação local...");
+            else Serial.printf("[WS INFORMAÇÃO] ⏱️ Conectado, mas sem strings de animação há %lu ms!\n", tempoSemDados);
             
             if (_isReceivingData) {
                  Serial.println("[WS ALERTA] 🔴 O fluxo de dados que estava ativo caiu!");
@@ -51,7 +48,7 @@ void MochiWebSocketClient::verificarFluxoDados() {
 
         // 3. A animação local roda solta aqui SEMPRE que o servidor estiver parado
         if (_animations) {
-            Serial.println("[DISPLAY] Ativando modo de contingência visual (not_wifi)...");
+            Serial.println("[DISPLAY] Ativando modo de contingência visual (animationsLoop)...");
             _animations->animationsLoop(); 
         }
         
@@ -110,9 +107,7 @@ void MochiWebSocketClient::webSocketEvent(WStype_t type, uint8_t * payload, size
             Serial.println("[WS] Desconectado do Servidor de Animações!");
             wsClientInstance->_isReceivingData = false;
             
-            if (wsClientInstance->_animations) {
-                //wsClientInstance->_animations->not_wifi();
-            }
+            if (wsClientInstance->_animations)  wsClientInstance->_animations->noworker();
             break;
             
         case WStype_CONNECTED:
@@ -125,36 +120,39 @@ void MochiWebSocketClient::webSocketEvent(WStype_t type, uint8_t * payload, size
             if (length > 0) {
                 wsClientInstance->_lastPacketTime = millis();
                 
-                // 🔍 DEBUG 1: Descobrir se a biblioteca está recebendo ALGO
-                Serial.printf("\n[DEBUG WS] Chegou um pacote no evento! Tamanho bruto: %d bytes\n", length);
-                
                 if (!wsClientInstance->_isReceivingData) {
                     Serial.println("[WS STATUS] 🟢 Fluxo de dados ativo com o Worker!");
                     wsClientInstance->_isReceivingData = true;
                 }
 
                 wsClientInstance->processarPayloadAnimacao((const char*)payload);
-            } else {
-               // Serial.println("[DEBUG WS] Evento disparado, mas tamanho do payload é 0!");
             }
-            break;
-
-        case WStype_PING:
-            //Serial.println("[WS TESTE] PING recebido do Servidor! (ESP32 respondendo com PONG automático)");
-            break;
-
-        case WStype_PONG:
-            //Serial.println("[WS TESTE] PONG recebido! O servidor está vivo e respondendo ativamente.");
             break;
             
         case WStype_ERROR:
-            //Serial.printf("[WS Erro] Falha crítica na transmissão de quadros! Código/Tamanho: %d\n", length);
-            if (wsClientInstance->_animations) {
-                //wsClientInstance->_animations->not_wifi();
-            }
+            Serial.printf("[WS Erro] Falha crítica na transmissão de quadros! Código/Tamanho: %d\n", length);
+            if (wsClientInstance->_animations) wsClientInstance->_animations->bugframe();
             break;
 
         default:
             break;
     }
+}
+
+// TESTES VIA CONSOLE
+void MochiWebSocketClient::testarConexaoWS() {
+    Serial.println("\n--- [CONSOLE] DIAGNÓSTICO DE CONECTIVIDADE WS ---");
+    
+    // Verifica se a conexão física está ativa no momento
+    if (_isReceivingData) {
+        Serial.println("Status: 🟢 Ativo e recebendo frames do Worker.");
+    } else {
+        Serial.println("Status: 🔴 Inativo ou sem dados trafegando.");
+    }
+
+    // Calcula há quanto tempo não chega nenhum frame
+    unsigned long tempoSemDados = millis() - _lastPacketTime;
+    Serial.printf("Tempo desde o último pacote: %.2f segundos\n", tempoSemDados / 1000.0);
+    
+    Serial.println("-------------------------------------------------");
 }

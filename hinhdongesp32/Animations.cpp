@@ -74,8 +74,18 @@ void Animations::setFrameData(const unsigned char* frameData[]){
   }
 }
 
-void Animations::not_wifi(){
+
+// INTERAÇÃO DE LOCAL DE RESPOSTAS
+void Animations::not_wifi(){ 
   setFrameData(not_connet);
+}
+
+void Animations::noworker(){ 
+  setFrameData(not_worker);
+}
+
+void Animations::bugframe(){ 
+  setFrameData(not_bug);
 }
 
 // COMANDO LIGA E DESLIGA TELA.
@@ -95,9 +105,14 @@ void Animations::control_oled_power(bool enable) {
     }
 }
 
+
+// WORKER TRANSMISSION
+/*
+  OS METODOS A BAIXO SÃO REFERENTES AO SERVIDOR WORKER
+*/
 void Animations::drawHexFrame(const char* hexData) {
-    if (hexData != nullptr) {
-        _currentHexData = String(hexData);
+if (hexData != nullptr && strlen(hexData) < sizeof(_currentHexData)) {
+        strcpy(_currentHexData, hexData); // Copia segura sem alocar memória nova
         _newFrameAvailable = true;
     }
 }
@@ -107,14 +122,14 @@ void Animations::processHexFrameLoop() {
     if (!_newFrameAvailable) return;
     _newFrameAvailable = false; 
 
-    size_t hexLength = _currentHexData.length();
+    size_t hexLength = strlen(_currentHexData); 
     if (hexLength == 0) return;
 
     // Garante que usaremos o espaço exato de 1024 bytes (2048 caracteres hex)
     uint8_t buffer[1024];
     memset(buffer, 0, sizeof(buffer)); // Zera a tela inteira (fundo preto)
 
-    const char* hexDataPtr = _currentHexData.c_str();
+    const char* hexDataPtr = _currentHexData;
 
     // Lambda para converter caracteres hexadecimais em numeração real
     auto charToNibble = [](char c) -> uint8_t {

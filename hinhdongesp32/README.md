@@ -114,3 +114,7 @@ Este projeto é um clone/adaptação.
 ## 📄 Licença
 
 Este projeto é de código aberto e está licenciado sob a Licença **MIT** (ou outra licença que o autor original tenha especificado).
+
+
+### Site para criação de imagens OLED
+[OLED Display Animation Maker](https://www.oledanimationmaker.com/)
