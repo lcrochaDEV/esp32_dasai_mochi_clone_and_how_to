@@ -29,7 +29,7 @@ app.add_middleware(
 # -------------------------------------------------------------------------
 MONGO_URI = "mongodb://admin:admin@192.168.1.252:27017/?authSource=admin"
 DB_NAME = "MochiDB"
-COLLECTION_NAME = "mochi_animations"
+COLLECTION_NAME = "MochiDataBase"
 
 client = AsyncIOMotorClient(MONGO_URI)
 db = client[DB_NAME]
@@ -40,7 +40,78 @@ active_connections: set[WebSocket] = set()
 
 # Categoria padrão do sistema. Vai rodar aleatoriamente entre as cadastradas com este type.
 current_interaction_type = "animation" 
+frame_delay = 0.042  # Delay padrão (~24 FPS) em segundos
 
+# Sistema de Filas e Interrupção Imediata
+priority_queue = None
+interrupt_current = False  # Flag para cortar a animação em execução na mesma hora
+
+# -------------------------------------------------------------------------
+# NOVO ENDPOINT: EXECUÇÃO IMEDIATA DE ANIMAÇÃO ESPECÍFICA
+# -------------------------------------------------------------------------
+@app.post("/play-now")
+async def play_now(name: str = Query(..., description="Nome exato da animação que quer rodar agora")):
+    """
+    Endpoint HTTP para injetar uma animação específica para rodar imediatamente.
+    Assim que ela terminar, o sistema volta a sortear a categoria atual de forma transparente.
+    Exemplo: POST http://localhost:8000/play-now?name=piscar_olhos
+    """
+    global priority_queue, interrupt_current
+    
+    if priority_queue is None:
+        logger.error("Erro: Sistema de filas 'priority_queue' não foi definido.")
+        raise HTTPException(status_code=500, detail="O sistema de filas ainda não foi inicializado.")
+
+    try:
+        logger.info(f"Buscando animação imediata: '{name}' no MongoDB...")
+        animation = await collection.find_one({"name": name})
+        
+        if not animation:
+            logger.warning(f"Animação '{name}' não encontrada.")
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Animação com o nome '{name}' não foi encontrada."
+            )
+
+        if not animation.get("active", False):
+            raise HTTPException(status_code=400, detail="Esta animação está cadastrada, mas está desativada.")    
+
+        if "frames" not in animation or len(animation["frames"]) == 0:
+            logger.warning(f"Animação '{name}' está sem frames.")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"A animação '{name}' existe, mas não possui frames."
+            )
+
+        # 1. Limpa a fila de prioridade antiga se houver (para garantir que toque apenas a última clicada)
+        while not priority_queue.empty():
+            try:
+                priority_queue.get_nowait()
+                priority_queue.task_done()
+            except asyncio.QueueEmpty:
+                break
+
+        # 2. Adiciona a nova animação à fila
+        await priority_queue.put(animation)
+        
+        # 3. Força a interrupção imediata da animação que está rodando agora!
+        interrupt_current = True
+        
+        logger.info(f"Animação prioritária '{name}' adicionada. Sinal de interrupção ATIVADO!")
+        
+        return {
+            "status": "sucesso",
+            "mensagem": f"A animação '{name}' foi acionada e interromperá o frame atual imediatamente."
+        }
+
+    except HTTPException as http_err:
+        raise http_err
+    except Exception as e:
+        logger.error(f"Erro ao processar /play-now: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Erro interno: {str(e)}"
+        )
 # -------------------------------------------------------------------------
 # NOVO ENDPOINT PARA MUDAR A CATEGORIA DINAMICAMENTE
 # -------------------------------------------------------------------------
@@ -79,51 +150,102 @@ def get_current_category():
     return {"current_interaction_type": current_interaction_type}
 
 # -------------------------------------------------------------------------
+# NOVO ENDPOINT: ALTERAR O TEMPO DE EXIBIÇÃO (DELAY) DOS FRAMES
+# -------------------------------------------------------------------------
+@app.post("/set-delay")
+async def set_delay(seconds: float = Query(..., description="Tempo em segundos que cada frame ficará visível. Ex: 0.042 para rápido, 1.5 para lento.")):
+    """
+    Endpoint HTTP para mudar a velocidade da animação em tempo real.
+    Exemplo: POST http://localhost:8000/set-delay?seconds=1.5
+    """
+    global frame_delay
+    
+    if seconds <= 0:
+        raise HTTPException(
+            status_code=400, 
+            detail="O tempo de delay por frame deve ser maior que zero segundos."
+        )
+        
+    old_delay = frame_delay
+    frame_delay = seconds
+    
+    logger.info(f"Velocidade alterada via API: {old_delay}s -> {frame_delay}s por frame")
+    return {
+        "status": "sucesso",
+        "delay_anterior": f"{old_delay} segundos",
+        "novo_delay": f"{frame_delay} segundos",
+        "mensagem": "A nova velocidade de exibição foi aplicada instantaneamente a partir do próximo frame."
+    }
+# -------------------------------------------------------------------------
 # LOOP PRINCIPAL DO WORKER (REPRODUTOR ALEATÓRIO)1
 # -------------------------------------------------------------------------
 async def animation_streamer_loop():
-    """
-    Loop perpétuo que busca animações aleatórias baseadas na categoria (type) atual
-    e transmite seus frames para o hardware conectado.
-    """
-    global current_interaction_type
-    logger.info("Worker de Streaming de Animações Aleatórias iniciado!")
+    global current_interaction_type, priority_queue, interrupt_current, frame_delay
+    logger.info("Worker de Streaming de Animações v3.3 (Interrupção de Tela) ativo!")
 
     while True:
-        # Se não houver nenhum hardware conectado, espera um pouco e pula o ciclo
         if not active_connections:
             await asyncio.sleep(1)
             continue
 
         try:
-            # 1. Pipeline de Agregação para buscar 1 animação aleatória filtrada pelo 'type' atual
-            pipeline = [
-                {"$match": {"type": current_interaction_type}},
-                {"$sample": {"size": 1}}
-            ]
-            
-            cursor = collection.aggregate(pipeline)
-            animations = await cursor.to_list(length=1)
+            animation = None
+            is_priority = False
 
-            if not animations:
-                logger.warning(f"Nenhuma animação encontrada para a categoria: '{current_interaction_type}'")
-                await asyncio.sleep(2)
-                continue
+            # 1. Verifica se há prioridade na fila
+            if priority_queue is not None and not priority_queue.empty():
+                animation = await priority_queue.get()
+                is_priority = True
+                logger.info(f"[URGENTE] Iniciando imediatamente: '{animation.get('name')}'")
+                
+                # VERIFICAÇÃO DE ATIVAÇÃO PARA ANIMAÇÕES PRIORITÁRIAS
+                if not animation.get("active", False):
+                    logger.warning(f"[URGENTE BLOCKED] A animação '{animation.get('name')}' foi solicitada, mas está inativa (active=False). Pulando.")
+                    priority_queue.task_done()
+                    continue
+            else:
+                # Se não houver prioridade, faz o sorteio normal filtrando apenas as ATIVAS (active: True)
+                pipeline = [
+                    {"$match": {"type": current_interaction_type, "active": True}},
+                    {"$sample": {"size": 1}}
+                ]
+                cursor = collection.aggregate(pipeline)
+                animations = await cursor.to_list(length=1)
+                
+                if animations:
+                    animation = animations[0]
+                else:
+                    logger.warning(f"Nenhuma animação ativa encontrada para a categoria: '{current_interaction_type}'")
+                    await asyncio.sleep(2)
+                    continue
 
-            animation = animations[0]
+            # Reseta a flag de interrupção antes de começar a exibir os frames
+            interrupt_current = False
+
             frames = animation.get("frames", [])
-
             if not frames:
-                logger.warning(f"A animação '{animation.get('name')}' foi sorteada mas não possui frames válidos.")
-                await asyncio.sleep(1)
+                if is_priority:
+                    priority_queue.task_done()
                 continue
 
-            logger.info(f"[Sorteada] Transmitindo: '{animation.get('name')}' (Categoria: {current_interaction_type}) - {len(frames)} frames")
+            logger.info(f"Transmitindo: '{animation.get('name')}' | Origem: {'PRIORITÁRIA' if is_priority else 'SORTEIO'}")
 
-            # 2. Varre os frames da animação sorteada
             for frame in frames:
-                # Se o hardware desconectar no meio da transmissão, interrompe imediatamente
                 if not active_connections:
+                    break
+
+                # >>> INTERRUPÇÃO INSTANTÂNEA <<<
+                if interrupt_current and not is_priority:
+                    logger.info(f"Interrompendo a animação '{animation.get('name')}' no meio!")
+                    
+                    # ENVIAR COMANDO DE LIMPEZA OU FRAME PRETO AO ESP32
+                    # Se você tiver uma string hexadecimal que representa a tela toda apagada (ex: tudo 0x00), 
+                    # envie-a aqui. Caso contrário, enviar uma string vazia ou comando de reset limpa o buffer.
+                    clear_tasks = [
+                        connection.send_text("CLEAR") # Ou envie uma string de zeros compatível com seu ESP32
+                        for connection in active_connections
+                    ]
+                    await asyncio.gather(*clear_tasks, return_exceptions=True)
                     break
 
                 hex_frame_data = str(frame.get("data", "")).strip()
@@ -135,14 +257,18 @@ async def animation_streamer_loop():
                     ]
                     await asyncio.gather(*send_tasks, return_exceptions=True)
 
-                # Controle de Frame Rate (~24 FPS)
-                await asyncio.sleep(0.080)
+                await asyncio.sleep(frame_delay)
 
-            # Pequeno intervalo opcional entre o fim de uma animação e o sorteio da próxima
+            # Finaliza a tarefa da fila prioritária
+            if is_priority:
+                priority_queue.task_done()
+                interrupt_current = False 
+                logger.info(f"[URGENTE] Concluída reprodução de '{animation.get('name')}'. Retornando ao fluxo padrão.")
+
             await asyncio.sleep(0.1)
 
         except Exception as e:
-            logger.error(f"Erro crítico no loop do Worker: {e}")
+            logger.error(f"Erro crítico no loop do Worker: {e}", exc_info=True)
             await asyncio.sleep(1)
 
 
@@ -185,10 +311,23 @@ async def websocket_endpoint(websocket: WebSocket):
 # -------------------------------------------------------------------------
 @app.on_event("startup")
 async def startup_event():
+    global priority_queue
+    # Inicializa a fila de forma segura no loop de eventos correto
+    priority_queue = asyncio.Queue()
+    logger.info("Fila 'priority_queue' inicializada com sucesso!")
+    
+    # Inicia o loop de streaming em background
     asyncio.create_task(animation_streamer_loop())
 
 
 '''
 # Bash
+# CATEGORIA
 curl -X POST "http://localhost:8000/set-category?category=happy"
+# ANIMAÇÃO
+curl -X POST "http://localhost:8000//play-now?name=smirk"
+# TEMPO DA ANIMAÇÃO
+curl -X POST "http://192.168.1.252:8003/set-delay?seconds=0.09"
+# VERIFICA QUAL CATEGORIA
+curl -X GET "http://192.168.1.252:8003/current-category"
 '''

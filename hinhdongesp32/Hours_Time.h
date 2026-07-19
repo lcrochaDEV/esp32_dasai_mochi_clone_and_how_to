@@ -1,8 +1,14 @@
 #ifndef HOURS_TIME_H
 #define HOURS_TIME_H
 
-#include <Arduino.h>
+#if defined(ESP8266)
+  #include <ESP8266WiFi.h>
+#elif defined(ESP32)
+  #include <WiFi.h>
+#endif
 
+#include <Arduino.h>
+#include <HTTPClient.h>
 #include "Animations.h"
 
 class Hours_Time {
@@ -36,6 +42,9 @@ class Hours_Time {
 
     // Novo: Constante para o tempo limite (5 minutos)
     const unsigned long TIMEOUT_MS = 1 * 60 * 1000; 
+
+    bool _categoriaAlterada = false; // Flag para controle de envio único por ciclo
+    void enviarAlteracaoCategoria(const char* novaCategoria);
 };
  
 #endif

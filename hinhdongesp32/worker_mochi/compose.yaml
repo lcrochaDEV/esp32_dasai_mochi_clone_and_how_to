@@ -1,6 +1,6 @@
 services:
   fastapi-app_mochi:
-    image: fastapi_celery_example_web
+    image: fastapi_celery_mochi_worker
     container_name: worker_mochi
     hostname: worker_mochi
     build:

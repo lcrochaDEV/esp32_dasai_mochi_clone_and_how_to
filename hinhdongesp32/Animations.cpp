@@ -90,6 +90,7 @@ void Animations::bugframe(){
 
 // COMANDO LIGA E DESLIGA TELA.
 void Animations::control_oled_power(bool enable) {
+  _oled_active = enable;
     if (enable) {
         // LIGA o display (sai do modo de suspensão)
         display.ssd1306_command(SSD1306_DISPLAYON);
