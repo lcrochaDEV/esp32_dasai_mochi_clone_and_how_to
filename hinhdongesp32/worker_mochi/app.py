@@ -119,7 +119,7 @@ async def play_now(name: str = Query(..., description="Nome exato da animação 
 async def set_category(category: str = Query(..., description="O nome do 'type' da animação desejada")):
     """
     Endpoint HTTP para alterar a categoria atual de animações em tempo real.
-    Exemplo de chamada: POST http://localhost:8000/set-category?category=happy
+    Exemplo de chamada: POST http://localhost:8000/set-category?category=hora_de_dormir
     """
     global current_interaction_type
     
@@ -329,5 +329,5 @@ curl -X POST "http://localhost:8000//play-now?name=smirk"
 # TEMPO DA ANIMAÇÃO
 curl -X POST "http://192.168.1.252:8003/set-delay?seconds=0.09"
 # VERIFICA QUAL CATEGORIA
-curl -X GET "http://192.168.1.252:8003/current-category"
+curl -X POST "http://192.168.1.252:8003/current-category"
 '''

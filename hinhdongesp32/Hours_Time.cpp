@@ -53,67 +53,20 @@ void Hours_Time::calendar() {
   delay(10000); 
 }
 
-/*
-void Hours_Time::weke_on(){
-    // --- PARTE NOVA: CONTROLE DE TIMEOUT ---
-    // Verifica se estamos no modo manual E se o tempo expirou
-    if (is_manual_mode) {
-        // millis() retorna o tempo em ms desde o boot
-        if (millis() - manual_on_timestamp >= TIMEOUT_MS) {
-            // AÇÃO: Timeout de 5 minutos atingido. Desliga o display
-            animationRef->control_oled_power(false);
-            is_manual_mode = false; // Sai do modo manual
-            Serial.println("Timeout de 5 minutos atingido. Desligando display.");
-        }
-        // Se ainda estiver no modo manual e o tempo não expirou, a função termina aqui
-        // para manter o display ligado até o timeout.
-        return; 
-    }
-    struct tm timeinfo; // 1. Declara onde a hora será armazenada
-    if (getLocalTime(&timeinfo)) { // 2. Pega a hora (verifica se foi sucesso)
-        char currentTimeStr[6]; // 3. Declara onde a string formatada será armazenada
-        // 4. Formata a hora para a string (ex: de números para "18:00")
-        strftime(currentTimeStr, sizeof(currentTimeStr), "%H:%M", &timeinfo);
-        // 5. Compara a string formatada com a sua string de referência
-        if (strcmp(hours_sleep, currentTimeStr) == 0) {
-            //Serial.println("Hora de Desligamento atingida!");
-            // 🎯 AÇÃO: Desliga o display
-            animationRef->control_oled_power(false);
-        }else if (strcmp(hours_wakeon, currentTimeStr) == 0){
-            Serial.println("Hora de Ligar atingida!");
-            // 🎯 AÇÃO: Liga o display
-            animationRef->control_oled_power(true);
-        } 
-    }
-}
-*/
-// Esta função é chamada por um evento externo (p. ex., um botão)
-void Hours_Time::manual_turn_on() {
-    // 1. Pega a hora atual (necessário para checar se estamos no período 22:00-06:00)
-    struct tm timeinfo;
-    if (getLocalTime(&timeinfo)) {
-       char currentTimeStr[6]; // 3. Declara onde a string formatada será armazenada
-        // 4. Formata a hora para a string (ex: de números para "18:00")
-        strftime(currentTimeStr, sizeof(currentTimeStr), "%H:%M:%S", &timeinfo); 
-        // 2. Verifica se estamos no período ATIVO (22:00 até 06:00)
-        if (strncmp(currentTimeStr, hours_sleep, 5) >= 0 || strncmp(currentTimeStr, hours_wakeon, 5) < 0) {    
-            // AÇÃO: Liga o display
-            animationRef->control_oled_power(true);
-            
-            // Define o modo manual e salva o tempo atual (millis())
-            is_manual_mode = true;
-            manual_on_timestamp = millis();
-            
-            Serial.println("Display ligado manualmente (Modo Timeout).");
-        }
-    }
-}
 
 void Hours_Time::weke_on() {
-    struct tm timeinfo;
+    // Roda a checagem 1 vez por segundo para economizar CPU
+    static unsigned long lastTimeCheck = 0;
+    if (millis() - lastTimeCheck < 1000) return;
+    lastTimeCheck = millis();
+
+    // 1. Declara onde a hora será armazenada
+    struct tm timeinfo; 
     if (!getLocalTime(&timeinfo)) return;
 
+    // 2. Declara onde a string formatada será armazenada
     char currentTimeStr[6]; 
+    // 3. Formata a hora para a string (ex: de números para "18:00")
     strftime(currentTimeStr, sizeof(currentTimeStr), "%H:%M", &timeinfo);
 
     // -------------------------------------------------------------------------
@@ -130,50 +83,95 @@ void Hours_Time::weke_on() {
     sscanf(hours_wakeon, "%d:%d", &wakeonHour, &wakeonMin);
     int wakeonMinutos = (wakeonHour * 60) + wakeonMin;
 
-    // Calcula a janela de 1 hora antes de dormir (60 minutos)
-    int janelaPreDormir = sleepMinutos - 60;
+    // Proteção profissional para virada de dia (Adiciona 1440 min se der negativo)
+    int janelaPreDormir = (sleepMinutos - 60 + 1440) % 1440;
 
-    if (atualMinutos >= janelaPreDormir && atualMinutos < sleepMinutos) {
-        if (!_categoriaAlterada) {
-            enviarAlteracaoCategoria("hora_de_dormir");
+    // Verifica se a janela cruza a meia-noite (ex: se dorme às 00:30, janela é 23:30)
+    bool dentroDaJanela = false;
+    if (janelaPreDormir < sleepMinutos) dentroDaJanela = (atualMinutos >= janelaPreDormir && atualMinutos < sleepMinutos); // Caso padrão no mesmo dia (ex: janela 21:00 às 22:00)
+    else dentroDaJanela = (atualMinutos >= janelaPreDormir || atualMinutos < sleepMinutos); // Caso cruze a meia-noite (ex: janela 23:30 às 00:30)
+
+    static bool primeiraExecucao = true;
+
+    if (dentroDaJanela) {
+        if (!_categoriaAlterada || primeiraExecucao) {
+            enviarAlteracaoCategoria("bedtime");
             _categoriaAlterada = true; 
+            primeiraExecucao = false;
         }
     } 
     // Ao atingir o horário de acordar (Wakeon) ou durante o dia, redefine para o padrão
-    else if (atualMinutos >= wakeonMinutos && atualMinutos < janelaPreDormir) {
-        if (_categoriaAlterada) {
+    else {
+        if (_categoriaAlterada || primeiraExecucao) {
             enviarAlteracaoCategoria("animation");
             _categoriaAlterada = false; // Reseta a flag para o próximo ciclo diário
+            primeiraExecucao = false;
         }
     }
     // -------------------------------------------------------------------------
 
-    // --- MODO MANUAL COM TIMEOUT ---
+    // --- PARTE NOVA: CONTROLE DE TIMEOUT ---
+    // Verifica se estamos no modo manual e se o tempo expirou
     if (is_manual_mode) {
+        // millis() retorna o tempo em ms desde o boot
         if (millis() - manual_on_timestamp >= TIMEOUT_MS) {
-            is_manual_mode = false; 
-            Serial.println("Timeout manual atingido. Retornando ao controle automatico.");
-        } else {
-            return; 
+            // AÇÃO: Timeout de 5 minutos atingido. Desliga o display
+            if (animationRef) animationRef->control_oled_power(false);
+            is_manual_mode = false; // Sai do modo manual
+            Serial.println("Timeout de 5 minutos atingido. Desligando display.");
         }
+        // Se ainda estiver no modo manual e o tempo não expirou, a função termina aqui
+        // para manter o display ligado até o timeout.
+        return; 
     }
 
     // --- CONTROLE AUTOMÁTICO DE ENERGIA DO DISPLAY ---
-    if (strncmp(currentTimeStr, hours_sleep, 5) == 0) {
-        if (animationRef && animationRef->is_oled_on()) {
-            // 🎯 AÇÃO: Desliga o display
-            Serial.println("Hora de Dormir atingida!");
-            animationRef->control_oled_power(false);
-        }
-    } 
-    else if (strncmp(currentTimeStr, hours_wakeon, 5) == 0) {
-        if (animationRef && !animationRef->is_oled_on()) {
-            // 🎯 AÇÃO: Liga o display
-            Serial.println("Hora de Ligar atingida!");
-            animationRef->control_oled_power(true);
+    // Trava de borda: Garante que o comando de liga/desliga só execute 1 vez no minuto
+    static int ultimoMinutoExecutado = -1;
+
+    if (timeinfo.tm_min != ultimoMinutoExecutado) {
+        // 4. Compara a string formatada com a sua string de referência
+        if (strncmp(currentTimeStr, hours_sleep, 5) == 0) {
+            if (animationRef && animationRef->is_oled_on()) {
+                // 🎯 AÇÃO: Desliga o display
+                Serial.println("Hora de Dormir atingida!");
+                animationRef->control_oled_power(false);
+                ultimoMinutoExecutado = timeinfo.tm_min;
+            }
         } 
+        else if (strncmp(currentTimeStr, hours_wakeon, 5) == 0) {
+            if (animationRef && !animationRef->is_oled_on()) {
+                // 🎯 AÇÃO: Liga o display
+                Serial.println("Hora de Ligar atingida!");
+                animationRef->control_oled_power(true);
+                ultimoMinutoExecutado = timeinfo.tm_min;
+            } 
+        }
     }
 }
+
+// Esta função é chamada por um evento externo (p. ex., um botão)
+void Hours_Time::manual_turn_on() {
+    // 1. Pega a hora atual (necessário para checar se estamos no período 22:00-06:00)
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo)) {
+       char currentTimeStr[6]; // 3. Declara onde a string formatada será armazenada
+        // 4. Formata a hora para a string (ex: de números para "18:00")
+        strftime(currentTimeStr, sizeof(currentTimeStr), "%H:%M:%S", &timeinfo); 
+        // 2. Verifica se estamos no período ATIVO (22:00 até 06:00)
+        if (strncmp(currentTimeStr, hours_sleep, 5) >= 0 || strncmp(currentTimeStr, hours_wakeon, 5) < 0) {    
+            // AÇÃO: Liga o display
+            if (animationRef) animationRef->control_oled_power(true);
+            
+            // Define o modo manual e salva o tempo atual (millis())
+            is_manual_mode = true;
+            manual_on_timestamp = millis();
+            
+            Serial.println("Display ligado manualmente (Modo Timeout).");
+        }
+    }
+}
+
 
 const char* Hours_Time::losttime() const {
     struct tm timeinfo;
@@ -195,7 +193,6 @@ void Hours_Time::enviarAlteracaoCategoria(const char* novaCategoria) {
     HTTPClient http;
     // Constrói a URL exata solicitada apontando para o seu Worker Python
     String url = "http://192.168.1.252:8003/set-category?category=" + String(novaCategoria); 
-    // OBS: Substitua '192.168.1.X' pelo IP real da máquina do seu Worker se não for localhost absoluto.
 
     http.begin(url);
     int httpResponseCode = http.POST(""); // Envia o POST vazio conforme a estrutura do curl

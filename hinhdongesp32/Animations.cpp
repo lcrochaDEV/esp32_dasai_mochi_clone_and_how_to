@@ -119,6 +119,8 @@ if (hexData != nullptr && strlen(hexData) < sizeof(_currentHexData)) {
 }
 
 void Animations::processHexFrameLoop() {
+    // 🛑 Se a tela estiver desligada, ignora os frames do WebSocket para não acender a tela!
+    if (!_oled_active) return;
     // 1. Só processa se houver um frame novo vindo do WebSocket
     if (!_newFrameAvailable) return;
     _newFrameAvailable = false; 

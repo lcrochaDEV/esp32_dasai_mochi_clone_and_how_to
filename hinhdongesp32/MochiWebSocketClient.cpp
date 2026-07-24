@@ -87,7 +87,7 @@ void MochiWebSocketClient::processarPayloadAnimacao(const char* payloadStr) {
     }
 
     if (ehHexValido) {
-        Serial.println("Tipo: Matriz Hex Bruta [Válida].");
+        //Serial.println("Tipo: Matriz Hex Bruta [Válida].");
         
         if (_animations) _animations->drawHexFrame((char*)payloadStr);
 
@@ -107,7 +107,8 @@ void MochiWebSocketClient::webSocketEvent(WStype_t type, uint8_t * payload, size
             Serial.println("[WS] Desconectado do Servidor de Animações!");
             wsClientInstance->_isReceivingData = false;
             
-            if (wsClientInstance->_animations)  wsClientInstance->_animations->noworker();
+            if (wsClientInstance->_animations)  
+                wsClientInstance->_animations->noworker();
             break;
             
         case WStype_CONNECTED:

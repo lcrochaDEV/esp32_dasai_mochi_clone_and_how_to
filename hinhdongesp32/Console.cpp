@@ -18,18 +18,26 @@ void Console::menssageViewMsg(const char* consoleText) {
 }
 
 void Console::consoleView() {
-  if (Serial.available() > 0) {
-    // readStringUntil evita atrasos de timeout do readString comum
-    String consoleText = Serial.readStringUntil('\n');
-    consoleText.trim();
-    
-    if (consoleText.length() > 0) {
-      consoleText.toUpperCase();
-      commands_envio(consoleText.c_str());
+  static String inputBuffer = ""; // Guarda os caracteres à medida que chegam
+
+  // Lê todos os caracteres disponíveis no buffer Serial sem NENHUM timeout/bloqueio
+  while (Serial.available() > 0) {
+    char c = Serial.read();
+
+    if (c == '\n' || c == '\r') { // Se pressionou ENTER (fim do comando)
+      inputBuffer.trim();
+      
+      if (inputBuffer.length() > 0) {
+        inputBuffer.toUpperCase();
+        commands_envio(inputBuffer.c_str());
+      }
+      
+      inputBuffer = ""; // Limpa o buffer para o próximo comando
+    } else {
+      inputBuffer += c; // Concatena os caracteres digitados
     }
   }
 }
-
 void Console::commands_envio(const String& command) {
   String prefixo = "Mochi> ";
   menssageViewMsg((prefixo + command).c_str());
