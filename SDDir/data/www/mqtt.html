@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MQTT</title>
+    <link rel="stylesheet" href="www/mqtt.css">
+    <link rel="stylesheet" href="mqtt.css">
+</head>
+<body>
+    <section>
+        <div class="title_header">
+            <a href="/"><span class="material-symbols-outlined">arrow_back_ios</span></a>
+            <div class="module">
+                <div class="module-img">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS1J8kCjHTLvpieMjK_ESF8e_vyYlHtsAsUUQ&s" />
+                    <div class="blur-container">
+                    <h2>MQTT</h2>
+                    </div>
+                </div>
+                <p style="font-size: 0.9rem; opacity: 0.9;">Configure os parâmetros de conexão para garantir a comunicação segura do seu dispositivo.</p>
+            </div>
+        </div>
+        <div class="config-container">
+
+            <div class="container_mqtt">
+                <form id="mqtt-form">
+                    <div class="form-group">
+                        <label for="broker">Broker (Endereço do Servidor)</label>
+                        <div class="row">
+                            <input type="text" id="broker" placeholder="ex: ://meubroker.com">
+                            <input type="number" id="port" placeholder="1883" value="1883">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="clientId">Client ID (Identificador Único)</label>
+                        <input type="text" id="clientId" placeholder="ESP32_Sala_01">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="user">Usuário (Obrigatório para segurança)</label>
+                        <input type="text" id="user" placeholder="Digite o usuário">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pass">Senha</label>
+                        <input type="password" id="passw" placeholder="••••••••">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="baseTopic">Tópico Base (Prefixo)</label>
+                        <input type="text" id="baseTopic" placeholder="minhacasa/dispositivo1/">
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="useSsl" checked>
+                        <label for="useSsl">Usar conexão segura (TLS/SSL)</label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="qos">Qualidade de Serviço (QoS)</label>
+                        <select id="qos">
+                            <option value="0">0 - No máximo uma vez (Rápido)</option>
+                            <option value="1" selected>1 - Pelo menos uma vez (Confiável)</option>
+                            <option value="2">2 - Exatamente uma vez (Crítico)</option>
+                        </select>
+                    </div>
+
+                    <div class="btn-mqtt">
+                        <button type="button" class="btn-save" onclick="saveMqttConfig()">Salvar Configuração</button>
+                    </div>
+                </form>
+                
+                <div class="security-note">
+                    <strong>Dica de Segurança:</strong> Nunca use o broker sem senha em redes públicas. Para WebSockets (HTML), certifique-se de que o broker suporta conexões <code>wss://</code>.
+                </div>
+            </div>
+            <table class="mqtt-config-table">
+            </table>
+        </div>
+    </section>
+
+    <script src="www/ConnectJson.js"></script>
+    <script src="www/mqtt.js"></script>
+    <script src="ConnectJson.js"></script>
+    <script src="mqtt.js"></script>
+</body>
+</html>
