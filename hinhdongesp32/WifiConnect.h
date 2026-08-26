@@ -1,45 +1,50 @@
 #ifndef WIFICONNECT_H
 #define WIFICONNECT_H
 
-#if defined(ESP8266)
-  #include <ESPAsyncTCP.h>
-  #include <ESP8266WiFi.h>
-#elif defined(ESP32)
-  #include <AsyncTCP.h>
-  #include <WiFi.h>
-#endif
-
-#include <Arduino.h>
-
+#include <WiFi.h>
 #include "Animations.h"
-#include "Hours_Time.h"
 
+// Estado da máquina de conexão assíncrona
+enum StatusRede {
+    REDE_DESCONECTADA,
+    REDE_CONECTANDO,
+    REDE_CONECTADA
+};
 
+class WifiConnect {
+private:
+    const char* ssid;
+    const char* password;
+    Animations* wifiAnimationRef;
 
+    // Gerenciamento da rede de backup
+    String backupSsid;
+    String backupPass;
+    bool ProcessoDeBackup = false;
 
-class WifiConnect: public  Hours_Time{
-  public:
-    WifiConnect(const char* ssid = nullptr, const char* password = nullptr, Animations* animationPtr = nullptr);
+    // Controle do ciclo de tentativas e tempo (Backoff Exponencial)
+    StatusRede _estado = REDE_DESCONECTADA;
+    unsigned long _ultimaTentativaMs = 0;
+    unsigned long _intervaloReconexao = 2000;      // Começa em 2 segundos
+    const unsigned long _intervaloMaximo = 60000;   // Limite máximo de 1 minuto
+
+    void registrarEventos();
+
+public:
+    WifiConnect(const char* ssid, const char* password, Animations* animationPtr);
+
+    // Inicialização da interface Wi-Fi sem bloquear o boot
     void connections_Wifi();
-    void backupRede();
-    void Uptime();
+
+    // Máquina de estados executada continuamente no loop()
+    void loop();
+
+    // Utilitários de status e controle do rádio
     bool connections_status();
     void diconnectRede();
     void wifiOff();
     void searchRedes();
     String getEncryptionName(uint8_t encryptionType);
-   
-  private:
-    String backupSsid;
-    String backupPass;
-    int maxTentativas = 20;
-    int tentativaAtual = 0;
-    bool ProcessoDeBackup = false;
-  protected:
-    const char* ssid; 
-    const char* password;
-    //CLASS ANIMATIONS
-    Animations* wifiAnimationRef;
 };
- 
-#endif
+
+#endif // WIFICONNECT_H

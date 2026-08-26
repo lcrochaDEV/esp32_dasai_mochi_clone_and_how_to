@@ -12,47 +12,43 @@ const char* Hours_Time::getHoursSleep() const {
     return hours_sleep;
 }
 
-void Hours_Time::time_server(){
-  // 2. Configuração do Serviço de Tempo (NTP)
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-    
-  Serial.println("\nServiço NTP configurado. Aguardando a primeira sincronização...");
-  calendar();
-  manual_turn_on();
+void Hours_Time::time_server() {
+    // Configura o serviço de tempo NTP (inicia o cliente em segundo plano)
+    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+    Serial.println("\nServiço NTP configurado. Aguardando a primeira sincronização...");
 }
-
 void Hours_Time::calendar() {
-  // Estrutura para armazenar a informação de tempo
-  struct tm timeinfo;
+    // Executa a checagem apenas a cada 10 segundos sem travar a CPU
+    static unsigned long lastCalendarCheck = 0;
+    if (millis() - lastCalendarCheck < 10000) return;
+    lastCalendarCheck = millis();
 
-  // Tenta obter a data e hora do RTC interno (sincronizado pelo NTP)
-  if(!getLocalTime(&timeinfo)){
-    Serial.println("Falha ao obter o tempo. Tentando novamente...");
-    delay(5000);
-    return;
-  }
-  
-  // Imprime os detalhes no Monitor Serial
-  Serial.println("--- Tempo Atual ---");
-  
-  // Formata a data e hora (Ex: 29/11/2025 12:05:21)
-  char timeString[50];
-  strftime(timeString, sizeof(timeString), "%d/%m/%Y %H:%M:%S", &timeinfo);
-  Serial.print("Data e Hora: ");
-  Serial.println(timeString);
+    // 1. Só tenta buscar o tempo se a rede Wi-Fi estiver ativa
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("[NTP] Aguardando conexão Wi-Fi para sincronizar relógio...");
+        return;
+    }
 
-  // Exibe o dia da semana (Ex: Sexta-feira)
-  char dayOfWeek[10];
-  strftime(dayOfWeek, sizeof(dayOfWeek), "%A", &timeinfo);
-  Serial.print("Dia da Semana: ");
-  Serial.println(dayOfWeek);
+    // 2. Tenta obter a data e hora do relógio interno
+    struct tm timeinfo;
+    if (!getLocalTime(&timeinfo, 100)) { // Timeout curto de 100ms em vez de travar
+        Serial.println("Falha ao obter o tempo. Tentando novamente...");
+        return;
+    }
+    
+    // Imprime os detalhes no Monitor Serial
+    Serial.println("--- Tempo Atual ---");
+    
+    char timeString[50];
+    strftime(timeString, sizeof(timeString), "%d/%m/%Y %H:%M:%S", &timeinfo);
+    Serial.printf("Data e Hora: %s\n", timeString);
 
-  Serial.println("-------------------");
+    char dayOfWeek[10];
+    strftime(dayOfWeek, sizeof(dayOfWeek), "%A", &timeinfo);
+    Serial.printf("Dia da Semana: %s\n", dayOfWeek);
 
-  // Espera 10 segundos antes de buscar novamente
-  delay(10000); 
+    Serial.println("-------------------");
 }
-
 
 void Hours_Time::weke_on() {
     // Roda a checagem 1 vez por segundo para economizar CPU
@@ -70,9 +66,8 @@ void Hours_Time::weke_on() {
     strftime(currentTimeStr, sizeof(currentTimeStr), "%H:%M", &timeinfo);
 
     // -------------------------------------------------------------------------
-    // 🧠 LÓGICA INTELIGENTE: Controle de Categoria Pré-Desligamento (1h antes)
+    // 🧠 LÓGICA DE CÁLCULO DE PERÍODOS
     // -------------------------------------------------------------------------
-    // Convertemos tudo para minutos desde o início do dia para facilitar a matemática limpa
     int atualMinutos = (timeinfo.tm_hour * 60) + timeinfo.tm_min;
     
     int sleepHour, sleepMin;
@@ -83,24 +78,37 @@ void Hours_Time::weke_on() {
     sscanf(hours_wakeon, "%d:%d", &wakeonHour, &wakeonMin);
     int wakeonMinutos = (wakeonHour * 60) + wakeonMin;
 
-    // Proteção profissional para virada de dia (Adiciona 1440 min se der negativo)
+    // 1. Período Noturno (Janela de sono completa, ex: entre 22:00 e 06:00)
+    bool periodoSono = false;
+    if (sleepMinutos > wakeonMinutos) {
+        periodoSono = (atualMinutos >= sleepMinutos || atualMinutos < wakeonMinutos);
+    } else {
+        periodoSono = (atualMinutos >= sleepMinutos && atualMinutos < wakeonMinutos);
+    }
+
+    // 2. Janela Pré-Dormir (1 hora antes do horário de dormir)
     int janelaPreDormir = (sleepMinutos - 60 + 1440) % 1440;
-
-    // Verifica se a janela cruza a meia-noite (ex: se dorme às 00:30, janela é 23:30)
     bool dentroDaJanela = false;
-    if (janelaPreDormir < sleepMinutos) dentroDaJanela = (atualMinutos >= janelaPreDormir && atualMinutos < sleepMinutos); // Caso padrão no mesmo dia (ex: janela 21:00 às 22:00)
-    else dentroDaJanela = (atualMinutos >= janelaPreDormir || atualMinutos < sleepMinutos); // Caso cruze a meia-noite (ex: janela 23:30 às 00:30)
+    if (janelaPreDormir < sleepMinutos) {
+        dentroDaJanela = (atualMinutos >= janelaPreDormir && atualMinutos < sleepMinutos);
+    } else {
+        dentroDaJanela = (atualMinutos >= janelaPreDormir || atualMinutos < sleepMinutos);
+    }
 
+    // -------------------------------------------------------------------------
+    // 🧠 DISPARO DA CATEGORIA (PRE-DORMIR OU MADRUGADA AO RELIGAR)
+    // -------------------------------------------------------------------------
     static bool primeiraExecucao = true;
 
-    if (dentroDaJanela) {
+    // Se estiver no período de 1h antes OU já no horário de dormir (ao religar)
+    if (dentroDaJanela || periodoSono) {
         if (!_categoriaAlterada || primeiraExecucao) {
             enviarAlteracaoCategoria("bedtime");
             _categoriaAlterada = true; 
             primeiraExecucao = false;
         }
     } 
-    // Ao atingir o horário de acordar (Wakeon) ou durante o dia, redefine para o padrão
+    // Ao atingir o horário de acordar ou durante o dia, redefine para o padrão
     else {
         if (_categoriaAlterada || primeiraExecucao) {
             enviarAlteracaoCategoria("animation");
@@ -108,32 +116,36 @@ void Hours_Time::weke_on() {
             primeiraExecucao = false;
         }
     }
-    // -------------------------------------------------------------------------
 
-    // --- PARTE NOVA: CONTROLE DE TIMEOUT ---
-    // Verifica se estamos no modo manual e se o tempo expirou
+    // -------------------------------------------------------------------------
+    // 🧠 CONTROLE DE TIMEOUT (MODO MANUAL)
+    // -------------------------------------------------------------------------
     if (is_manual_mode) {
-        // millis() retorna o tempo em ms desde o boot
         if (millis() - manual_on_timestamp >= TIMEOUT_MS) {
             // AÇÃO: Timeout de 5 minutos atingido. Desliga o display
             if (animationRef) animationRef->control_oled_power(false);
+            
+            // 🎯 Dispara a categoria para o backend ao encerrar o modo manual
+            if (periodoSono || dentroDaJanela) {
+                enviarAlteracaoCategoria("bedtime");
+            } else {
+                enviarAlteracaoCategoria("animation");
+            }
+
             is_manual_mode = false; // Sai do modo manual
-            Serial.println("Timeout de 5 minutos atingido. Desligando display.");
+            Serial.println("Timeout de 5 minutos atingido. Desligando display e atualizando categoria.");
         }
-        // Se ainda estiver no modo manual e o tempo não expirou, a função termina aqui
-        // para manter o display ligado até o timeout.
         return; 
     }
 
+    // -------------------------------------------------------------------------
     // --- CONTROLE AUTOMÁTICO DE ENERGIA DO DISPLAY ---
-    // Trava de borda: Garante que o comando de liga/desliga só execute 1 vez no minuto
+    // -------------------------------------------------------------------------
     static int ultimoMinutoExecutado = -1;
 
     if (timeinfo.tm_min != ultimoMinutoExecutado) {
-        // 4. Compara a string formatada com a sua string de referência
         if (strncmp(currentTimeStr, hours_sleep, 5) == 0) {
             if (animationRef && animationRef->is_oled_on()) {
-                // 🎯 AÇÃO: Desliga o display
                 Serial.println("Hora de Dormir atingida!");
                 animationRef->control_oled_power(false);
                 ultimoMinutoExecutado = timeinfo.tm_min;
@@ -141,7 +153,6 @@ void Hours_Time::weke_on() {
         } 
         else if (strncmp(currentTimeStr, hours_wakeon, 5) == 0) {
             if (animationRef && !animationRef->is_oled_on()) {
-                // 🎯 AÇÃO: Liga o display
                 Serial.println("Hora de Ligar atingida!");
                 animationRef->control_oled_power(true);
                 ultimoMinutoExecutado = timeinfo.tm_min;

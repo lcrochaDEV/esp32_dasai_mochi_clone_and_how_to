@@ -28,9 +28,8 @@ const char* PASSWORD = "LIBER@RWIFI";
 WirelessConnection wirelessConnection = WirelessConnection(SSID, PASSWORD, &animations_exec);
 
 void startWifi() {
-  wirelessConnection.backupRede();
   wirelessConnection.connections_Wifi();  // CONNECT WIFI
-  wirelessConnection.searchRedes();       // SCAN WIFI REDE
+  //wirelessConnection.searchRedes();       // SCAN WIFI REDE
   //wirelessConnection.connections_status();
   //wirelessConnection.btClassicScan();
 }
@@ -44,21 +43,19 @@ void setup() {
   animations_exec.helloWordMochi();                         // Inicializa a tela com o Hello Word do seu Mochi
   startWifi();                                              // Gerencia as conexões de rádio
   hours_Time_exec.time_server();                            // Configurações de hora baseadas no NTP Server
-  wirelessConnection.Uptime();                              // ALARMES DE QUEDAS UP/DOWN
   startServer();                                            // Inicializa o servidor HTTP assíncrono (método do servidorweb.h)
   wsClient.begin("192.168.1.252", 8003, "/ws/animations");  // CONECTA AO SEU BACKEND DO MOCHIDB (Ajuste o IP e a porta se necessário)
   console.helloWord();                                      // CONSOLE
 }
 
 void loop() {
+  //🎯 Essencial : Mantenha a máquina de reconexão do Wi - Fi viva !
+  wirelessConnection.loop();
   // Se o Wi-Fi estiver conectado, escuta as strings do MochiDB e processa na tela
   if (WiFi.status() == WL_CONNECTED) {
     wsClient.loop();
     wsClient.verificarFluxoDados();
     animations_exec.processHexFrameLoop();  // Renderiza o frame Hex recebido do Mongo
-  } else {
-    // Se não houver internet/servidor, roda a animação padrão local em loop
-    animations_exec.animationsLoop();
   }
 
   hours_Time_exec.weke_on();

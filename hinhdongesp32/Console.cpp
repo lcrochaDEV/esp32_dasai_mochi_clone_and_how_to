@@ -57,7 +57,7 @@ void Console::commands_envio(const String& command) {
   else if(command == "DISPLAYOFF") control_oled_power(false);
   
   //ANIMAÇÃO
-  else if(command == "ANIMACAO") animationsLoop();
+  else if(command == "ANIMACAO") defaultlocal();
   
   //WORKER SERVER TESTE
   //else if(command == "WORKER STATUS") executarTesteConexao();

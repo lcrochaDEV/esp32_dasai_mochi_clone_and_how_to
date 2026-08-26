@@ -160,7 +160,7 @@
 
 
 // Mảng con trỏ đến tất cả các frame => PTBR = Array de ponteiros para todos os frames
-const unsigned char* frames[150] = {
+const unsigned char* default_local[150] = {
   frame_001, frame_002, frame_003, frame_004, frame_005, frame_006, frame_007, frame_008, frame_009, frame_010, 
   frame_011, frame_012, frame_013, frame_014, frame_015, frame_016, frame_017, frame_018, frame_019, frame_020, 
   frame_021, frame_022, frame_023, frame_024, frame_025, frame_026, frame_027, frame_028, frame_029, frame_030, 
@@ -178,17 +178,16 @@ const unsigned char* frames[150] = {
   frame_141, frame_142, frame_143, frame_144, frame_145, frame_146, frame_147, frame_148, frame_149, frame_150
 };
 // Mảng con trỏ đến tất cả các frame => PTBR = Array de ponteiros para todos os frames
-const unsigned char* not_connet[1] = {
+const unsigned char* notconnet[1] = {
   wifi_00
 };
 
-const unsigned char* not_worker[1] = {
-  wifi_00
+const unsigned char* notworker[1] = {
+  frame_001
 };
-const unsigned char* not_bug[1] = {
-  wifi_00
+const unsigned char* notbug[1] = {
+  frame_108
 };
-
 
 #define TOTAL_FRAMES 153
 #define FRAME_WIDTH 128
