@@ -46,6 +46,7 @@ class Hours_Time {
 
     bool _categoriaAlterada = false; // Flag para controle de envio único por ciclo
     void enviarAlteracaoCategoria(const char* novaCategoria);
+    bool _enviarComandoDelay(float segundos) ;
 };
  
 #endif

@@ -212,3 +212,50 @@ void Hours_Time::enviarAlteracaoCategoria(const char* novaCategoria) {
     else Serial.printf("[HTTP] Erro ao enviar POST: %s\n", http.errorToString(httpResponseCode).c_str());
     http.end();
 }
+
+/**
+ * Envia um comando POST para alterar o delay no servidor local.
+ * @param segundos O valor do delay (ex: 0.09)
+ * @return true se o comando foi aceito pelo servidor, false caso contrário
+ */
+bool Hours_Time::_enviarComandoDelay(float segundos = 0.09) {
+    // 1. Verifica se o Wi-Fi está conectado
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("[HTTP] Erro: Wi-Fi desconectado.");
+        return false;
+    }
+
+    HTTPClient http;
+    bool sucesso = false;
+
+    // 2. Monta a URL dinamicamente com o valor dos segundos
+    String url = "http://192.168.1.252:8003/set-delay?seconds=" + String(segundos, 2);
+    
+    Serial.print("[HTTP] Enviando POST para: ");
+    Serial.println(url);
+
+    // 3. Inicializa a requisição
+    http.begin(url);
+
+    // 4. Envia o POST vazio (já que os dados estão na própria URL)
+    int httpResponseCode = http.POST("");
+
+    // 5. Verifica a resposta do servidor
+    if (httpResponseCode > 0) {
+        Serial.printf("[HTTP] Código de resposta: %d\n", httpResponseCode);
+        
+        // Retorna sucesso se o servidor responder com a faixa de código 2xx (Sucesso)
+        if (httpResponseCode >= 200 && httpResponseCode < 300) {
+            String resposta = http.getString();
+            Serial.println("[HTTP] Resposta: " + resposta);
+            sucesso = true;
+        }
+    } else {
+        Serial.printf("[HTTP] Falha no POST, erro: %s\n", http.errorToString(httpResponseCode).c_str());
+    }
+
+    // 6. Libera os recursos da memória
+    http.end();
+    
+    return sucesso;
+}
