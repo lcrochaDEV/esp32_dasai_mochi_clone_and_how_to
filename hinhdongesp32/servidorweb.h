@@ -20,7 +20,7 @@ extern WirelessConnection wirelessConnection;
 #include "Hours_Time.h"
 extern Hours_Time hours_Time_exec;
 #include "AccessControl.h"
-AccessControl accessSys; 
+extern AccessControl accessSys; 
 #include "EspMqtt.h"
 EspMqtt mqttService;
 #include "UUID.h"
@@ -60,11 +60,13 @@ String processor(const String& var){
     if(var == "WAKEON_DISPLAY") return String(hours_Time_exec.getHoursWakeon()); // Retorna o valor da função getHoursWakeon()
     if(var == "SLEEP_DISPLAY") return String(hours_Time_exec.getHoursSleep()); // Retorna o valor da função getHoursSleep()
 
+// Métodos da classe PhysicalAccessControl adaptados com String(...)
     if(var == "MODULE_VALUE")         return accessSys.modelBoardESP();
-    if(var == "TOTAL_RAN_VALUE")      return accessSys.total_ran();
-    if(var == "FLASH_SIZE_VALUE")     return accessSys.flash_size();
-    if(var == "MENOR_RAN_SIZE_VALUE") return accessSys.menor_ran_size();
-    if(var == "SKETCH_SIZE_VALUE")    return accessSys.sketch_Size();
+    if(var == "TOTAL_RAN_VALUE")      return String(accessSys.total_ram_kb()) + " KB";
+    if(var == "FLASH_SIZE_VALUE")     return String(accessSys.flash_size_mb()) + " MB";
+    if(var == "MENOR_RAN_SIZE_VALUE") return String(accessSys.min_free_ram_kb()) + " KB";
+    if(var == "SKETCH_SIZE_VALUE")    return String(accessSys.sketch_size_kb()) + " KB";
+
     // Para qualquer outro placeholder não mapeado
     return String("");
 }

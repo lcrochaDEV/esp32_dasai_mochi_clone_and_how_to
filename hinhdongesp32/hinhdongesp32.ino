@@ -27,6 +27,9 @@ const char* PASSWORD = "LIBER@RWIFI";
 
 WirelessConnection wirelessConnection = WirelessConnection(SSID, PASSWORD, &animations_exec);
 
+#include "TelemetryClient.h"
+
+
 void startWifi() {
   wirelessConnection.connections_Wifi();  // CONNECT WIFI
   //wirelessConnection.searchRedes();       // SCAN WIFI REDE
@@ -58,6 +61,16 @@ void loop() {
     animations_exec.processHexFrameLoop();  // Renderiza o frame Hex recebido do Mongo
   }
 
+  // Cronômetro não-bloqueante via millis()
+  static unsigned long lastTelemetryMs = 0;
+  const unsigned long TELEMETRY_INTERVAL = 15000; // Envia a cada 15 segundos
+
+  if (millis() - lastTelemetryMs >= TELEMETRY_INTERVAL) {
+      lastTelemetryMs = millis();
+      
+      // Dispara o POST e envia os dados para a API externa
+      sendDeviceTelemetry("http://192.168.1.6/api/telemetry");
+  }
   hours_Time_exec.weke_on();
   console.consoleView();
 

@@ -67,8 +67,8 @@ A fiação exata pode variar dependendo do seu módulo display e leitor de cart�
 | :--- | :--- | :--- | 
 | **GND** | GND | Terra |
 | **VCC/3.3V** | VCC  | Alimentação (3.3V) |
-| **D21** | MOSI (SDA) | Dados SPI |
-| **D22** | SCLK (SCK) | Clock SPI |
+| **D21** | MOSI (SDA) | Dados SPI | PIN 8
+| **D22** | SCLK (SCK) | Clock SPI | PIN 9
 
 
 ### 🔌 Esquema de Ligação: **ESP32-C3 Super Mini** para Módulo Cartão SD
