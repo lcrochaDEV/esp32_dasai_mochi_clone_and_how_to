@@ -1,6 +1,9 @@
 //CLASS DEFINIDA POR LUCAS ROCHA
+
+String hostname = "Mochi";
+
 #include "Console.h"
-Console console = Console("Mochi> ");
+Console console = Console(hostname.c_str());
 
 
 const char* hours_wakeon = "06:30";  // hours_down: Deve ser o fim do período noturno (06:00).
@@ -73,7 +76,7 @@ void loop() {
         lastTelemetryMs = millis();
 
         // Envia usando o endpoint atual e notifica o resultado para a classe
-        bool enviou = sendDeviceTelemetry(autoDiscovery.getEndpointUrl());
+        bool enviou = sendDeviceTelemetry(autoDiscovery.getEndpointUrl(), hostname.c_str());
         autoDiscovery.notifyTelemetryStatus(enviou);
     }
 

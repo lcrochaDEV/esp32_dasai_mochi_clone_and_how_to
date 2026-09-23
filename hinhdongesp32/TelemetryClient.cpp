@@ -7,7 +7,10 @@
 // Utiliza a instância global já existente para evitar duplicação de memória
 AccessControl accessSys; 
 
-bool sendDeviceTelemetry(const char* destinationUrl) {
+#include "Hours_Time.h"
+extern Hours_Time hours_Time_exec;
+
+bool sendDeviceTelemetry(const char* destinationUrl, const char* hostname) {
     // 1. Garante que há conexão de rede ativa
     if (WiFi.status() != WL_CONNECTED) {
         Serial.println("[Telemetria] Conexão Wi-Fi ausente. Abortando envio.");
@@ -31,10 +34,15 @@ bool sendDeviceTelemetry(const char* destinationUrl) {
     doc["ip"]              = WiFi.localIP().toString();
     doc["mac"]             = WiFi.macAddress();        // Formato padrão com separadores "AA:BB:CC:DD:EE:FF"
     doc["server"]          = "ESP32-Microcontroller";
-    doc["host"]            = String("ESP32-") + &cleanId[6];
-
+    // -------------------------------------------------------------------------
+    // Lógica do Hostname Opcional com Fallback para "ESP32-" + &cleanId[6]
+    // -------------------------------------------------------------------------
+    if (hostname != nullptr && strlen(hostname) > 0) doc["host"] = hostname; // Usa o nome customizado passado pelo usuário
+    else doc["host"] = String("ESP32-") + &cleanId[6]; // Valor padrão automático!
+    
     // Tempo de Atividade (Uptime) e Epoch
-    doc["datetime"]        = "2026-09-21 12:52:00"; // Pode ser integrado dinamicamente com NTP[cite: 12]
+    const char* dt = hours_Time_exec.losttime();
+    doc["datetime"] = (dt != nullptr && strcmp(dt, "00/00/0000 00:00:00") != 0) ? dt : "0000-00-00 00:00:00"; // Pode ser integrado dinamicamente com NTP
     doc["epoch_timestamp"] = millis() / 1000;
     
     unsigned long totalSeconds = millis() / 1000;

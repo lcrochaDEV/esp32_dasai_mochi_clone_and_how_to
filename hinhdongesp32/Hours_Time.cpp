@@ -214,10 +214,10 @@ void Hours_Time::enviarAlteracaoCategoria(const char* novaCategoria) {
 }
 
 /**
- * Envia um comando POST para alterar o delay no servidor local.
- * @param segundos O valor do delay (ex: 0.09)
- * @return true se o comando foi aceito pelo servidor, false caso contrário
- */
+* Envia um comando POST para alterar o delay no servidor local.
+* @param segundos O valor do delay (ex: 0.09)
+* @return true se o comando foi aceito pelo servidor, false caso contrário
+*/
 bool Hours_Time::_enviarComandoDelay(float segundos = 0.09) {
     // 1. Verifica se o Wi-Fi está conectado
     if (WiFi.status() != WL_CONNECTED) {
