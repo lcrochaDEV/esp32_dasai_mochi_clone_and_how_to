@@ -29,6 +29,9 @@ WirelessConnection wirelessConnection = WirelessConnection(SSID, PASSWORD, &anim
 
 #include "TelemetryClient.h"
 
+#include "AutoDiscoveryESP32.h"
+// Instância global simplificada
+AutoDiscoveryESP32 autoDiscovery("http://192.168.1.6/api/telemetry", 3);
 
 void startWifi() {
   wirelessConnection.connections_Wifi();  // CONNECT WIFI
@@ -61,16 +64,19 @@ void loop() {
     animations_exec.processHexFrameLoop();  // Renderiza o frame Hex recebido do Mongo
   }
 
-  // Cronômetro não-bloqueante via millis()
-  static unsigned long lastTelemetryMs = 0;
-  const unsigned long TELEMETRY_INTERVAL = 15000; // Envia a cada 15 segundos
+// 1. Manutenção do estado e autocura da rede (Rodando livre no loop)
+    autoDiscovery.tick();
 
-  if (millis() - lastTelemetryMs >= TELEMETRY_INTERVAL) {
-      lastTelemetryMs = millis();
-      
-      // Dispara o POST e envia os dados para a API externa
-      sendDeviceTelemetry("http://192.168.1.6/api/telemetry");
-  }
+    // 2. Disparo periódico da telemetria (ex: a cada 15s)
+    static unsigned long lastTelemetryMs = 0;
+    if (millis() - lastTelemetryMs >= 15000) {
+        lastTelemetryMs = millis();
+
+        // Envia usando o endpoint atual e notifica o resultado para a classe
+        bool enviou = sendDeviceTelemetry(autoDiscovery.getEndpointUrl());
+        autoDiscovery.notifyTelemetryStatus(enviou);
+    }
+
   hours_Time_exec.weke_on();
   console.consoleView();
 

@@ -4,6 +4,7 @@
 #include <ArduinoJson.h>
 
 #include "AccessControl.h"
+// Utiliza a instância global já existente para evitar duplicação de memória
 AccessControl accessSys; 
 
 bool sendDeviceTelemetry(const char* destinationUrl) {
@@ -16,15 +17,24 @@ bool sendDeviceTelemetry(const char* destinationUrl) {
     // 2. Constrói o Objeto exatamente no modelo esperado pelo Front-end / API
     JsonDocument doc;
 
+    // Obtém os bytes brutos do MAC do hardware (zero fragmentação no Heap)
+    uint8_t macBytes[6];
+    WiFi.macAddress(macBytes);
+
+    // Formata o ID limpo sem os dois pontos ':' (Exemplo: "30C6F78490AC")
+    char cleanId[13];
+    snprintf(cleanId, sizeof(cleanId), "%02X%02X%02X%02X%02X%02X", 
+             macBytes[0], macBytes[1], macBytes[2], macBytes[3], macBytes[4], macBytes[5]);
+
     // Identificação e Conectividade
-    doc["id"]              = WiFi.macAddress();
+    doc["id"]              = cleanId;                   // ID sem os dois pontos ':'
     doc["ip"]              = WiFi.localIP().toString();
-    doc["mac"]             = WiFi.macAddress();
+    doc["mac"]             = WiFi.macAddress();        // Formato padrão com separadores "AA:BB:CC:DD:EE:FF"
     doc["server"]          = "ESP32-Microcontroller";
-    doc["host"]            = "ESP32-" + WiFi.macAddress().substring(9);
+    doc["host"]            = String("ESP32-") + &cleanId[6];
 
     // Tempo de Atividade (Uptime) e Epoch
-    doc["datetime"]        = "2026-09-21 12:52:00"; // Pode ser integrado dinamicamente com NTP
+    doc["datetime"]        = "2026-09-21 12:52:00"; // Pode ser integrado dinamicamente com NTP[cite: 12]
     doc["epoch_timestamp"] = millis() / 1000;
     
     unsigned long totalSeconds = millis() / 1000;
@@ -41,27 +51,37 @@ bool sendDeviceTelemetry(const char* destinationUrl) {
     doc["kernel"]          = accessSys.modelBoardESP(); // ex: ESP32
     doc["temp"]            = 42.5; // Métricas de hardware
     doc["cpu_load"]        = 1.20;
-
-    // Mapeamento proporcional da memória Heap (RAM) com tipos numéricos numéricos (uint32_t)
+    // -------------------------------------------------------------------------
+    // Mapeamento de Memória RAM - DADOS BRUTOS (KB)
+    // -------------------------------------------------------------------------
+    // Mapeamento de memória Heap (RAM) em ponto flutuante (força decimal e impede que o valor vire 0)
     uint32_t totalHeapKb = accessSys.total_ram_kb(); 
     uint32_t freeHeapKb  = accessSys.free_ram_kb();  
     uint32_t usedHeapKb  = (totalHeapKb > freeHeapKb) ? (totalHeapKb - freeHeapKb) : 0;
 
     doc["ram_pct"]         = (totalHeapKb > 0) ? ((usedHeapKb * 100) / totalHeapKb) : 0;
-    doc["ram_total_mb"]    = totalHeapKb / 1024;
-    doc["ram_used_mb"]     = usedHeapKb / 1024;
+    doc["ram_total_kb"]    = totalHeapKb; // 1024.0; // Envia ex: 0.31 MB
+    doc["ram_used_kb"]     = usedHeapKb; // 1024.0;  // Envia ex: 0.15 MB
 
-    // Mapeamento de memória Flash/Disco
-    uint32_t flashTotalMb = accessSys.flash_size_mb();
-    uint32_t sketchSizeKb = accessSys.sketch_size_kb();
+    // -------------------------------------------------------------------------
+    // Mapeamento de Memória Flash / Disco - DADOS BRUTOS (KB)
+    // -------------------------------------------------------------------------
+    uint32_t flashTotalMb = accessSys.flash_size_mb();  // Exemplo: 4 MB
+    uint32_t sketchSizeKb = accessSys.sketch_size_kb(); // Exemplo: 980 KB
 
-    uint32_t flashTotalKb = flashTotalMb * 1024;
-    doc["disk_pct"]        = (flashTotalKb > 0) ? ((sketchSizeKb * 100) / flashTotalKb) : 0;
-    doc["disk_used_gb"]    = (float)sketchSizeKb / (1024.0 * 1024.0); 
-    doc["disk_total_gb"]   = (float)flashTotalMb / 1024.0;
+    // Converte Flash Total de MB para KB (Multiplicação por 1024)
+    uint32_t flashTotalKb = flashTotalMb * 1024;        // Exemplo: 4096 KB
+
+    // Percentual de uso do Sketch em relação à Flash total
+    doc["disk_pct"]      = (flashTotalKb > 0) ? ((sketchSizeKb * 100) / flashTotalKb) : 0;
+    
+    // Envia os inteiros brutos em KB sem divisões extras
+    doc["disk_used_kb"]  = sketchSizeKb;  // Envia ex: 980 (KB puros)
+    doc["disk_total_kb"] = flashTotalKb; // Envia ex: 4096 (KB puros)
 
     // Identidade Visual e Status do Dispositivo
-    doc["logo_url"]        = "https://cdn.shopify.com/shop-assets/shopify_brokers/dasaijp.myshopify.com/1760401281/logo_2.png?width=640";
+    doc["logo_url"]        = "https://dasai.com.au/cdn/shop/files/logo_2.png?v=1746165958&width=4370";
+    
     doc["online"]          = true;
 
     // 3. Serializa o JSON para string
