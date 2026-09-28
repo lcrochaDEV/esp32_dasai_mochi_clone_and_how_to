@@ -1,26 +1,76 @@
 #include "Console.h"
 
 Console::Console(const char* consoleText) 
-  : WirelessConnection(), SDData(), Animations(), MochiWebSocketClient(this), _consoleText(consoleText) 
-{}
+  : WirelessConnection(), 
+    SDData(), 
+    Animations(), 
+    MochiWebSocketClient(this), 
+    _consoleText(consoleText != nullptr ? consoleText : "Mochi> "),
+    _logsEnabled(true) // Logs ativados por padrão na inicialização
+{
+}
 
 void Console::helloWord(const char* consoleText) {
-  // Se o argumento 'text' for nulo, usamos o 'consoleText' da classe
   const char* msg = (consoleText != nullptr) ? consoleText : _consoleText;
-  
-  if (_consoleText) return menssageViewMsg(_consoleText);
   if (msg != nullptr) menssageViewMsg(msg);
 }
 
-
 void Console::menssageViewMsg(const char* consoleText) {
-  Serial.println(consoleText);
+  if (consoleText != nullptr) {
+    Serial.println(consoleText);
+  }
+}
+
+// Imprime o prompt definido na inicialização pelo usuário
+void Console::printPrompt() {
+  if (_consoleText != nullptr) {
+    Serial.print(_consoleText);
+  }
+}
+
+// Habilita ou desabilita os logs de todas as classes
+void Console::setLogState(bool enable) {
+  _logsEnabled = enable;
+  String status = _logsEnabled ? "[SYSTEM] Logs Habilitados." : "[SYSTEM] Logs Deshabilitados.";
+  menssageViewMsg(status.c_str());
+  printPrompt();
+}
+
+bool Console::isLogEnabled() const {
+  return _logsEnabled;
+}
+
+// Método central para canalizar logs de todas as classes
+void Console::log(const char* message) {
+  if (!_logsEnabled || message == nullptr) return;
+  
+  Serial.println(); // Garante que quebra a linha do prompt se necessário
+  Serial.print("[LOG] ");
+  Serial.println(message);
+  printPrompt(); // Exibe o prompt novamente após a mensagem de log
+}
+
+void Console::logf(const char* format, ...) {
+  if (!_logsEnabled || format == nullptr) return;
+
+  // Buffer estático/reduzido para não estourar a pilha da Task/FreeRTOS
+  static char buffer[128]; 
+  va_list args;
+  va_start(args, format);
+  vsnprintf(buffer, sizeof(buffer), format, args);
+  va_end(args);
+
+  this->log((const char*)buffer);
+}
+
+void Console::log(const String& message) {
+  log(message.c_str());
 }
 
 void Console::consoleView() {
   static String inputBuffer = ""; // Guarda os caracteres à medida que chegam
 
-  // Lê todos os caracteres disponíveis no buffer Serial sem NENHUM timeout/bloqueio
+  // Lê todos os caracteres disponíveis no buffer Serial sem bloqueio
   while (Serial.available() > 0) {
     char c = Serial.read();
 
@@ -29,7 +79,9 @@ void Console::consoleView() {
       
       if (inputBuffer.length() > 0) {
         inputBuffer.toUpperCase();
-        commands_envio(inputBuffer.c_str());
+        commands_envio(inputBuffer);
+      } else {
+        printPrompt();
       }
       
       inputBuffer = ""; // Limpa o buffer para o próximo comando
@@ -38,31 +90,37 @@ void Console::consoleView() {
     }
   }
 }
+
 void Console::commands_envio(const String& command) {
-  String prefixo = "Mochi> ";
-  menssageViewMsg((prefixo + command).c_str());
+  // Echo do comando do usuário acompanhado do prompt
+  menssageViewMsg((String(_consoleText) + command).c_str());
 
-  if (command == "HELP") menssageViewMsg("Comandos: SHOWDATA, HELP");
-
-  else if(command == "SCANWF") this->searchRedes(); // Chama o método herdado de WifiConnect
+  if (command == "HELP") {
+    menssageViewMsg("Comandos: SHOWDATA, HELP, SCANWF, DELETEDATA, DISPLAYON, DISPLAYOFF, ANIMACAO, LOGON, LOGOFF");
+  }
+  // Controle de Logs
+  else if (command == "LOGON") setLogState(true);
   
-  else if(command == "ERASEDATA");
+  else if (command == "LOGOFF") setLogState(false);
   
-  //SSD COMMANDS
-  else if(command == "SHOWDATA") printJSON();
-  else if(command == "DELETEDATA") deleteArquivo();
-
-  //Display
-  else if(command == "DISPLAYON") control_oled_power(true);
-  else if(command == "DISPLAYOFF") control_oled_power(false);
+  // Wi-Fi & Redes
+  else if (command == "SCANWF") this->searchRedes();
   
-  //ANIMAÇÃO
-  else if(command == "ANIMACAO") defaultlocal();
+  // SD & Data
+  else if (command == "SHOWDATA") printJSON();
   
-  //WORKER SERVER TESTE
-  //else if(command == "WORKER STATUS") executarTesteConexao();
-
-
+  else if (command == "DELETEDATA") deleteArquivo();
+  
+  // Display
+  else if (command == "DISPLAYON") control_oled_power(true);
+  
+  else if (command == "DISPLAYOFF") control_oled_power(false);
+  
+  // Animação
+  else if (command == "ANIMACAO") defaultlocal();
+  
   else menssageViewMsg("Comando inexistente. Digite HELP.");
-  menssageViewMsg(_consoleText);
+  
+  // Imprime o prompt do usuário pronto para o próximo comando
+  printPrompt();
 }

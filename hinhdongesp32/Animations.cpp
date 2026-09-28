@@ -33,7 +33,6 @@ void Animations::helloWordMochi(String consoleText) {
     delay(3000); // Reduzido para evitar trava prolongada no boot
 }
 
-
 void Animations::setFrameData(const unsigned char* frameData[], size_t frameCount) {
     if (!_oled_active || frameCount == 0) return;
 

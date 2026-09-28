@@ -3,7 +3,7 @@
 String hostname = "Mochi";
 
 #include "Console.h"
-Console console = Console(hostname.c_str());
+Console console((hostname + "> ").c_str());
 
 
 const char* hours_wakeon = "06:30";  // hours_down: Deve ser o fim do período noturno (06:00).
@@ -34,7 +34,7 @@ WirelessConnection wirelessConnection = WirelessConnection(SSID, PASSWORD, &anim
 
 #include "AutoDiscoveryESP32.h"
 // Instância global simplificada
-AutoDiscoveryESP32 autoDiscovery("http://192.168.1.6/api/telemetry", 3);
+AutoDiscoveryESP32 autoDiscovery("http://192.168.1.18/api/telemetry", 3);
 
 void startWifi() {
   wirelessConnection.connections_Wifi();  // CONNECT WIFI

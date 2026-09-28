@@ -7,20 +7,12 @@
 
 class AutoDiscoveryESP32 {
 public:
-    // Construtor aceita a URL inicial de fallback e o limite de falhas
     explicit AutoDiscoveryESP32(const char* defaultEndpoint = "http://192.168.1.6/api/telemetry", 
                                 uint8_t maxFailures = 3);
 
-    // Método único a ser chamado livremente no loop()
     void tick();
-
-    // Notifica a classe sobre o resultado da última telemetria
     void notifyTelemetryStatus(bool success);
-
-    // Retorna a URL atualizada para envio da telemetria
     const char* getEndpointUrl() const;
-
-    // Força uma busca manual na rede se necessário
     bool forceScan();
 
 private:
@@ -29,7 +21,16 @@ private:
     uint8_t m_maxFailures;
     bool m_scanning;
 
-    bool executeSubnetScan(String& outEndpointUrl);
+    // Variáveis de estado do Scan Incremental
+    uint32_t m_currentHostStep;
+    uint32_t m_startHost;
+    uint32_t m_endHost;
+    IPAddress m_localIP;
+    unsigned long m_lastScanStepMs;
+    unsigned long m_lastScanAttemptMs; // Pausa entre varreduras completas falhas
+
+    void prepareScanRange();
+    bool testSingleIP(IPAddress targetIP, String& outEndpointUrl);
 };
 
 #endif // AUTO_DISCOVERY_ESP32_HPP

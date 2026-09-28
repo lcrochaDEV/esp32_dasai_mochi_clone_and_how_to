@@ -12,3 +12,7 @@ class AccessControl: public PhysicalAccessControl, public FileSystemControl {
 };
  
 #endif
+
+
+//MUDAR ANIMAÇÃO POR SHELL
+// curl -X POST "http://192.168.1.252:8003/set-delay?seconds=0.09"

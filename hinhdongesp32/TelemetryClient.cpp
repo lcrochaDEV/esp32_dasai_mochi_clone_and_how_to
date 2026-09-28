@@ -3,6 +3,8 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 
+#include "Console.h"
+
 #include "AccessControl.h"
 // Utiliza a instância global já existente para evitar duplicação de memória
 AccessControl accessSys; 
@@ -13,7 +15,8 @@ extern Hours_Time hours_Time_exec;
 bool sendDeviceTelemetry(const char* destinationUrl, const char* hostname) {
     // 1. Garante que há conexão de rede ativa
     if (WiFi.status() != WL_CONNECTED) {
-        Serial.println("[Telemetria] Conexão Wi-Fi ausente. Abortando envio.");
+        //Serial.println("[Telemetria] Conexão Wi-Fi ausente. Abortando envio.");
+        Serial.printf("[Telemetria] Conexão Wi-Fi ausente. Abortando envio.");
         return false;
     }
 
@@ -107,7 +110,7 @@ bool sendDeviceTelemetry(const char* destinationUrl, const char* hostname) {
 
     if (httpCode > 0) {
         if (httpCode == HTTP_CODE_OK || httpCode == 201) {
-            Serial.printf("[Telemetria] Enviada com sucesso! Código: %d\n", httpCode);
+            console.logf("[Telemetria] Enviada com sucesso! Código: %d\n", httpCode);
             success = true;
         } else {
             Serial.printf("[Telemetria] Servidor recusou a requisição. Código: %d\n", httpCode);
