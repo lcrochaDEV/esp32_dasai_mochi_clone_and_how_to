@@ -12,41 +12,50 @@
 #include "Animations.h"
 
 class Hours_Time {
-  public:
-    Hours_Time(const char* hours_sleep = "--:--", const char* hours_wakeon = "--:--", const char* date = "", long gmtOffset_sec = -3 * 3600, int daylightOffset_sec = 0, const char* ntpServer = "pool.ntp.org", Animations* animationPtr = nullptr);
-    
-    //METODO DE TODO O PROGRAMA
-    void time_server();
-    void weke_on();
-    void manual_turn_on();
-    void monitorarConexao();
-    const char* losttime() const;
-    const char* getHoursSleep() const;
-    const char* getHoursWakeon() const;
-  private:
-    // Configurações de Fuso Horário e NTP
-    // Fuso horário de Brasília (GMT -3)
-    const char* hours_sleep;   // hours_sleep: Deve ser o início do período noturno (22:00).
-    const char* hours_wakeon;  // hours_wakeon: Deve ser o fim do período noturno (06:00).
+private:
+    // Mantidos exatamente como originalmente definidos
+    const char* hours_sleep;
+    const char* hours_wakeon;
     const char* date;
     long gmtOffset_sec;
-    int daylightOffset_sec; // 0 para não usar Horário de Verão
+    int daylightOffset_sec;
     const char* ntpServer;
-    void calendar();
-    //CLASS ANIMATIONS
     Animations* animationRef;
-    // Novo: Flag que indica se o display está em modo de timeout (ligado manualmente)
-    bool is_manual_mode = false; 
 
-    // Novo: Armazena o tempo (em milissegundos) em que o display foi ligado manualmente
-    unsigned long manual_on_timestamp = 0; 
+    // Atributos privados para controle interno de estado
+    int _sleepMinutos;
+    int _wakeonMinutos;
+    bool _categoriaAlterada;
+    bool is_manual_mode;
+    unsigned long manual_on_timestamp;
+    const unsigned long TIMEOUT_MS = 300000; // 5 minutos
 
-    // Novo: Constante para o tempo limite (5 minutos)
-    const unsigned long TIMEOUT_MS = 1 * 60 * 1000; 
+    // Estrutura do Relógio Interno
+    time_t _epochBase;
+    unsigned long _millisBase;
+    bool _isSynced;
 
-    bool _categoriaAlterada = false; // Flag para controle de envio único por ciclo
+    // Métodos utilitários internos
+    int _parseTimeToMinutes(const char* timeStr) const;
+    void _checkNTPSync();
+    time_t _getInternalEpoch() const;
+
+public:
+    Hours_Time(const char* hours_sleep, const char* hours_wakeon, const char* date, 
+               long gmtOffset_sec, int daylightOffset_sec, const char* ntpServer, 
+               Animations* animationPtr);
+
+    const char* getHoursWakeon() const;
+    const char* getHoursSleep() const;
+
+    void time_server();
+    void calendar();
+    void weke_on();
+    void manual_turn_on();
+    const char* losttime() const;
+
     void enviarAlteracaoCategoria(const char* novaCategoria);
-    bool _enviarComandoDelay(float segundos) ;
+    bool _enviarComandoDelay(float segundos = 0.09);
 };
- 
-#endif
+
+#endif // HOURS_TIME_H

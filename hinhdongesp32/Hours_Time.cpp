@@ -1,7 +1,24 @@
 #include "Hours_Time.h"
 
-Hours_Time::Hours_Time(const char* hours_sleep, const char* hours_wakeon, const char* date, long  gmtOffset_sec, int daylightOffset_sec, const char* ntpServer, Animations* animationPtr)
-    : hours_sleep(hours_sleep), hours_wakeon(hours_wakeon), date(date), gmtOffset_sec(gmtOffset_sec), daylightOffset_sec(daylightOffset_sec), ntpServer(ntpServer), animationRef(animationPtr) {
+// Construtor: Converte strings "HH:MM" para inteiros na inicialização
+Hours_Time::Hours_Time(const char* hours_sleep, const char* hours_wakeon, const char* date, long gmtOffset_sec, int daylightOffset_sec, const char* ntpServer, Animations* animationPtr)
+    : hours_sleep(hours_sleep), hours_wakeon(hours_wakeon), date(date), 
+      gmtOffset_sec(gmtOffset_sec), daylightOffset_sec(daylightOffset_sec), 
+      ntpServer(ntpServer), animationRef(animationPtr), 
+      _categoriaAlterada(false), is_manual_mode(false), manual_on_timestamp(0),
+      _epochBase(0), _millisBase(0), _isSynced(false) {
+    
+    _sleepMinutos = _parseTimeToMinutes(hours_sleep);
+    _wakeonMinutos = _parseTimeToMinutes(hours_wakeon);
+}
+
+int Hours_Time::_parseTimeToMinutes(const char* timeStr) const {
+    if (!timeStr) return 0;
+    int h = 0, m = 0;
+    if (sscanf(timeStr, "%d:%d", &h, &m) == 2) {
+        return (h * 60) + m;
+    }
+    return 0;
 }
 
 const char* Hours_Time::getHoursWakeon() const {
@@ -12,11 +29,36 @@ const char* Hours_Time::getHoursSleep() const {
     return hours_sleep;
 }
 
+// -------------------------------------------------------------------------
+// RELÓGIO INTERNO E NATIVE NTP
+// -------------------------------------------------------------------------
+
+void Hours_Time::_checkNTPSync() {
+    if (_isSynced) return;
+
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo, 10)) {
+        time_t now = time(NULL);
+        if (now > 100000) { // Garante que é uma data válida pós-1970
+            _epochBase = now;
+            _millisBase = millis();
+            _isSynced = true;
+            Serial.println("[NTP] Relógio interno sincronizado com sucesso!");
+        }
+    }
+}
+
+time_t Hours_Time::_getInternalEpoch() const {
+    if (!_isSynced) return 0;
+    return _epochBase + ((millis() - _millisBase) / 1000);
+}
+
 void Hours_Time::time_server() {
     // Configura o serviço de tempo NTP (inicia o cliente em segundo plano)
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
     Serial.println("\nServiço NTP configurado. Aguardando a primeira sincronização...");
 }
+
 void Hours_Time::calendar() {
     // Executa a checagem apenas a cada 10 segundos sem travar a CPU
     static unsigned long lastCalendarCheck = 0;
@@ -29,22 +71,25 @@ void Hours_Time::calendar() {
         return;
     }
 
-    // 2. Tenta obter a data e hora do relógio interno
-    struct tm timeinfo;
-    if (!getLocalTime(&timeinfo, 100)) { // Timeout curto de 100ms em vez de travar
+    _checkNTPSync();
+
+    time_t rawTime = _getInternalEpoch();
+    if (rawTime == 0) { // Timeout curto de 100ms em vez de travar
         Serial.println("Falha ao obter o tempo. Tentando novamente...");
         return;
     }
-    
+
+    struct tm* timeinfo = localtime(&rawTime);
+
     // Imprime os detalhes no Monitor Serial
     Serial.println("--- Tempo Atual ---");
-    
+
     char timeString[50];
-    strftime(timeString, sizeof(timeString), "%d/%m/%Y %H:%M:%S", &timeinfo);
+    strftime(timeString, sizeof(timeString), "%d/%m/%Y %H:%M:%S", timeinfo);
     Serial.printf("Data e Hora: %s\n", timeString);
 
     char dayOfWeek[10];
-    strftime(dayOfWeek, sizeof(dayOfWeek), "%A", &timeinfo);
+    strftime(dayOfWeek, sizeof(dayOfWeek), "%A", timeinfo);
     Serial.printf("Dia da Semana: %s\n", dayOfWeek);
 
     Serial.println("-------------------");
@@ -56,27 +101,25 @@ void Hours_Time::weke_on() {
     if (millis() - lastTimeCheck < 1000) return;
     lastTimeCheck = millis();
 
+    _checkNTPSync();
+
     // 1. Declara onde a hora será armazenada
-    struct tm timeinfo; 
-    if (!getLocalTime(&timeinfo)) return;
+    time_t rawTime = _getInternalEpoch();
+    if (rawTime == 0) return;
+
+    struct tm* timeinfo = localtime(&rawTime);
 
     // 2. Declara onde a string formatada será armazenada
     char currentTimeStr[6]; 
     // 3. Formata a hora para a string (ex: de números para "18:00")
-    strftime(currentTimeStr, sizeof(currentTimeStr), "%H:%M", &timeinfo);
+    strftime(currentTimeStr, sizeof(currentTimeStr), "%H:%M", timeinfo);
 
     // -------------------------------------------------------------------------
     // 🧠 LÓGICA DE CÁLCULO DE PERÍODOS
     // -------------------------------------------------------------------------
-    int atualMinutos = (timeinfo.tm_hour * 60) + timeinfo.tm_min;
-    
-    int sleepHour, sleepMin;
-    sscanf(hours_sleep, "%d:%d", &sleepHour, &sleepMin);
-    int sleepMinutos = (sleepHour * 60) + sleepMin;
-
-    int wakeonHour, wakeonMin;
-    sscanf(hours_wakeon, "%d:%d", &wakeonHour, &wakeonMin);
-    int wakeonMinutos = (wakeonHour * 60) + wakeonMin;
+    int atualMinutos = (timeinfo->tm_hour * 60) + timeinfo->tm_min;
+    int sleepMinutos = _sleepMinutos;
+    int wakeonMinutos = _wakeonMinutos;
 
     // 1. Período Noturno (Janela de sono completa, ex: entre 22:00 e 06:00)
     bool periodoSono = false;
@@ -124,7 +167,7 @@ void Hours_Time::weke_on() {
         if (millis() - manual_on_timestamp >= TIMEOUT_MS) {
             // AÇÃO: Timeout de 5 minutos atingido. Desliga o display
             if (animationRef) animationRef->control_oled_power(false);
-            
+
             // 🎯 Dispara a categoria para o backend ao encerrar o modo manual
             if (periodoSono || dentroDaJanela) {
                 enviarAlteracaoCategoria("bedtime");
@@ -143,19 +186,19 @@ void Hours_Time::weke_on() {
     // -------------------------------------------------------------------------
     static int ultimoMinutoExecutado = -1;
 
-    if (timeinfo.tm_min != ultimoMinutoExecutado) {
+    if (timeinfo->tm_min != ultimoMinutoExecutado) {
         if (strncmp(currentTimeStr, hours_sleep, 5) == 0) {
             if (animationRef && animationRef->is_oled_on()) {
                 Serial.println("Hora de Dormir atingida!");
                 animationRef->control_oled_power(false);
-                ultimoMinutoExecutado = timeinfo.tm_min;
+                ultimoMinutoExecutado = timeinfo->tm_min;
             }
         } 
         else if (strncmp(currentTimeStr, hours_wakeon, 5) == 0) {
             if (animationRef && !animationRef->is_oled_on()) {
                 Serial.println("Hora de Ligar atingida!");
                 animationRef->control_oled_power(true);
-                ultimoMinutoExecutado = timeinfo.tm_min;
+                ultimoMinutoExecutado = timeinfo->tm_min;
             } 
         }
     }
@@ -163,32 +206,38 @@ void Hours_Time::weke_on() {
 
 // Esta função é chamada por um evento externo (p. ex., um botão)
 void Hours_Time::manual_turn_on() {
+    _checkNTPSync();
+
     // 1. Pega a hora atual (necessário para checar se estamos no período 22:00-06:00)
-    struct tm timeinfo;
-    if (getLocalTime(&timeinfo)) {
-       char currentTimeStr[6]; // 3. Declara onde a string formatada será armazenada
+    time_t rawTime = _getInternalEpoch();
+    if (rawTime != 0) {
+        struct tm* timeinfo = localtime(&rawTime);
+        
+        // Corrigido buffer overflow: "%H:%M:%S" requer no mínimo 9 bytes ('H','H',':','M','M',':','S','S','\0')
+        char currentTimeStr[9]; // 3. Declara onde a string formatada será armazenada
         // 4. Formata a hora para a string (ex: de números para "18:00")
-        strftime(currentTimeStr, sizeof(currentTimeStr), "%H:%M:%S", &timeinfo); 
+        strftime(currentTimeStr, sizeof(currentTimeStr), "%H:%M:%S", timeinfo); 
+
         // 2. Verifica se estamos no período ATIVO (22:00 até 06:00)
         if (strncmp(currentTimeStr, hours_sleep, 5) >= 0 || strncmp(currentTimeStr, hours_wakeon, 5) < 0) {    
             // AÇÃO: Liga o display
             if (animationRef) animationRef->control_oled_power(true);
-            
+
             // Define o modo manual e salva o tempo atual (millis())
             is_manual_mode = true;
             manual_on_timestamp = millis();
-            
+
             Serial.println("Display ligado manualmente (Modo Timeout).");
         }
     }
 }
 
-
 const char* Hours_Time::losttime() const {
-    struct tm timeinfo;
+    time_t rawTime = _getInternalEpoch();
     static char timeString[50];
-    if (getLocalTime(&timeinfo)) {
-        strftime(timeString, sizeof(timeString), "%d/%m/%Y %H:%M:%S", &timeinfo);
+    if (rawTime != 0) {
+        struct tm* timeinfo = localtime(&rawTime);
+        strftime(timeString, sizeof(timeString), "%d/%m/%Y %H:%M:%S", timeinfo);
         return timeString;
     }
     return "00/00/0000 00:00:00"; // Retorno de segurança
@@ -205,6 +254,7 @@ void Hours_Time::enviarAlteracaoCategoria(const char* novaCategoria) {
     // Constrói a URL exata solicitada apontando para o seu Worker Python
     String url = "http://192.168.1.252:8003/set-category?category=" + String(novaCategoria); 
 
+    http.setTimeout(1000);
     http.begin(url);
     int httpResponseCode = http.POST(""); // Envia o POST vazio conforme a estrutura do curl
 
@@ -218,7 +268,7 @@ void Hours_Time::enviarAlteracaoCategoria(const char* novaCategoria) {
 * @param segundos O valor do delay (ex: 0.09)
 * @return true se o comando foi aceito pelo servidor, false caso contrário
 */
-bool Hours_Time::_enviarComandoDelay(float segundos = 0.09) {
+bool Hours_Time::_enviarComandoDelay(float segundos) {
     // 1. Verifica se o Wi-Fi está conectado
     if (WiFi.status() != WL_CONNECTED) {
         Serial.println("[HTTP] Erro: Wi-Fi desconectado.");
@@ -230,10 +280,11 @@ bool Hours_Time::_enviarComandoDelay(float segundos = 0.09) {
 
     // 2. Monta a URL dinamicamente com o valor dos segundos
     String url = "http://192.168.1.252:8003/set-delay?seconds=" + String(segundos, 2);
-    
+
     Serial.print("[HTTP] Enviando POST para: ");
     Serial.println(url);
 
+    http.setTimeout(1000);
     // 3. Inicializa a requisição
     http.begin(url);
 
@@ -243,7 +294,7 @@ bool Hours_Time::_enviarComandoDelay(float segundos = 0.09) {
     // 5. Verifica a resposta do servidor
     if (httpResponseCode > 0) {
         Serial.printf("[HTTP] Código de resposta: %d\n", httpResponseCode);
-        
+
         // Retorna sucesso se o servidor responder com a faixa de código 2xx (Sucesso)
         if (httpResponseCode >= 200 && httpResponseCode < 300) {
             String resposta = http.getString();
@@ -256,6 +307,6 @@ bool Hours_Time::_enviarComandoDelay(float segundos = 0.09) {
 
     // 6. Libera os recursos da memória
     http.end();
-    
+
     return sucesso;
 }

@@ -1,3 +1,11 @@
+#if defined(ESP32)
+  #include <WiFi.h>
+  #include <HTTPClient.h>
+#elif defined(ESP8266)
+  #include <ESP8266WiFi.h>
+  #include <ESP8266HTTPClient.h>
+#endif
+
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
@@ -114,4 +122,37 @@ void Animations::processHexFrameLoop() {
     display.clearDisplay();
     display.drawBitmap(0, 0, buffer, SCREEN_WIDTH, SCREEN_HEIGHT, SSD1306_WHITE);
     display.display();
+}
+
+bool Animations::setAnimationDelay(float segundos) {
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("[HTTP] Erro: Wi-Fi desconectado.");
+        return false;
+    }
+
+    HTTPClient http;
+    bool sucesso = false;
+
+    // Monta a URL dinamicamente com o valor flutuante recebido por parâmetro
+    String url = "http://192.168.1.252:8003/set-delay?seconds=" + String(segundos, 4);
+
+    Serial.print("[HTTP] Enviando POST para: ");
+    Serial.println(url);
+
+    http.begin(url);
+    http.setTimeout(1000); // Timeout rápido para evitar travamentos de CPU
+
+    int httpResponseCode = http.POST(""); // Envia o POST vazio conforme a estrutura
+
+    if (httpResponseCode > 0) {
+        Serial.printf("[HTTP] Código de resposta: %d\n", httpResponseCode);
+        if (httpResponseCode >= 200 && httpResponseCode < 300) {
+            sucesso = true;
+        }
+    } else {
+        Serial.printf("[HTTP] Falha no POST, erro: %s\n", http.errorToString(httpResponseCode).c_str());
+    }
+
+    http.end();
+    return sucesso;
 }

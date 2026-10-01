@@ -43,7 +43,7 @@ void MochiWebSocketClient::verificarFluxoDados() {
 }
 
 void MochiWebSocketClient::processarPayloadAnimacao(const char* payloadStr, size_t length) {
-    if (!payloadStr) return;
+    if (!payloadStr || length == 0) return;
     
     size_t tamanho = (length > 0) ? length : strlen(payloadStr);
     if (tamanho == 0) return;

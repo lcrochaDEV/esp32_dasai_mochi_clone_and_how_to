@@ -3,8 +3,7 @@
 String hostname = "Mochi";
 
 #include "Console.h"
-Console console((hostname + "> ").c_str());
-
+Console console("Mochi> ");
 
 const char* hours_wakeon = "06:30";  // hours_down: Deve ser o fim do período noturno (06:00).
 const char* hours_sleep = "22:03";   // hours_up: Deve ser o início do período noturno (22:00).

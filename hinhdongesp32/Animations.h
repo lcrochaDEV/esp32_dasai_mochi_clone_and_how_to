@@ -17,6 +17,8 @@ class Animations {
 
     bool is_oled_on() const { return _oled_active; }
     void control_oled_power(bool enable);
+
+    bool setAnimationDelay(float segundos);
     
   private:
     void setFrameData(const unsigned char* frameData[], size_t frameCount);
